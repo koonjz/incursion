@@ -1,0 +1,522 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/*  Design tokens — dark glass + navy                                  */
+/* ------------------------------------------------------------------ */
+@theme static {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
+
+  --color-navy-50: #f3f6fc;
+  --color-navy-100: #e6edf8;
+  --color-navy-200: #cfdcf0;
+  --color-navy-300: #a9bfe0;
+  --color-navy-400: #7897cc;
+  --color-navy-500: #4f73b4;
+  --color-navy-600: #34569a;
+  --color-navy-700: #25427a;
+  --color-navy-800: #1a3160;
+  --color-navy-900: #11224a;
+  --color-navy-950: #0a1530;
+
+  --color-ink: #f2f6ff;
+  --color-body: #b9c5de;
+  --color-muted: #8f9bb8;
+  --color-copper-300: #f7be8a;
+  --color-copper-400: #f5a15c;
+  --color-copper-500: #e9833a;
+
+  --radius-control: 0.75rem;
+  --radius-panel: 1.25rem;
+  --radius-hero: 1.75rem;
+
+  --shadow-glass: 0 1px 0 rgba(255, 255, 255, 0.14) inset, 0 24px 56px -24px rgba(0, 0, 0, 0.75),
+    0 2px 8px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lift: 0 1px 0 rgba(255, 255, 255, 0.18) inset, 0 32px 70px -22px rgba(0, 0, 0, 0.85),
+    0 6px 18px -6px rgba(0, 0, 0, 0.5);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Base                                                                */
+/* ------------------------------------------------------------------ */
+html {
+  background: #02040a;
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: 6rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  min-height: 100dvh;
+  color: var(--color-body);
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* The glossy backdrop lives in <Backdrop /> (see components/shared). This
+   layer is only the deep base colour + vignette. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(70rem 46rem at 12% -10%, rgba(12, 28, 78, 0.55), transparent 62%),
+    radial-gradient(60rem 44rem at 100% 8%, rgba(10, 22, 62, 0.45), transparent 60%),
+    radial-gradient(60rem 50rem at 55% 115%, rgba(8, 18, 54, 0.6), transparent 62%),
+    linear-gradient(180deg, #030818 0%, #01030a 100%);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--color-ink);
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+::selection {
+  background: rgba(96, 140, 255, 0.35);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-navy-400);
+  outline-offset: 2px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(160, 185, 255, 0.28) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(160, 185, 255, 0.25);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(160, 185, 255, 0.45);
+  background-clip: content-box;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Glass surfaces                                                      */
+/* ------------------------------------------------------------------ */
+@utility glass {
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015));
+  -webkit-backdrop-filter: blur(22px) saturate(120%);
+  backdrop-filter: blur(22px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: var(--shadow-glass);
+}
+
+@utility glass-strong {
+  background: linear-gradient(150deg, rgba(11, 20, 46, 0.95), rgba(4, 8, 22, 0.96));
+  -webkit-backdrop-filter: blur(28px) saturate(120%);
+  backdrop-filter: blur(28px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: var(--shadow-lift);
+}
+
+/* Flat tint for items nested inside a glass panel (no stacked blur). */
+@utility glass-inset {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: rgba(18, 28, 60, 0.92);
+  }
+  .glass-strong {
+    background: rgba(12, 20, 46, 0.97);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Backdrop art (modelled on the reference: glass ribbons + dome)      */
+/* ------------------------------------------------------------------ */
+@keyframes drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(2.5%, 3%, 0) scale(1.06); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-3%, -2.5%, 0) scale(1.08); }
+}
+.backdrop-art {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.backdrop-art svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.backdrop-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(70px);
+  will-change: transform;
+}
+.backdrop-orb--a {
+  width: 46rem;
+  height: 46rem;
+  left: -14rem;
+  top: -16rem;
+   background: radial-gradient(closest-side, rgba(24, 52, 150, 0.28), transparent);
+  animation: drift-a 26s ease-in-out infinite;
+}
+.backdrop-orb--b {
+  width: 40rem;
+  height: 40rem;
+  right: -12rem;
+  bottom: -14rem;
+   background: radial-gradient(closest-side, rgba(40, 32, 130, 0.24), transparent);
+  animation: drift-b 30s ease-in-out infinite;
+}
+.backdrop-orb--c {
+  width: 22rem;
+  height: 22rem;
+  left: 38%;
+  top: 8%;
+  background: radial-gradient(closest-side, rgba(233, 131, 58, 0.07), transparent);
+  animation: drift-b 34s ease-in-out infinite;
+}
+.backdrop-vignette {
+  position: absolute;
+  inset: 0;
+   background: radial-gradient(ellipse at 50% 35%, transparent 30%, rgba(1, 2, 6, 0.9) 100%);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Radix overlays — enter / exit animations                            */
+/* ------------------------------------------------------------------ */
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes dialog-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(6px) scale(0.98); }
+}
+@keyframes sheet-in-right {
+  from { transform: translateX(100%); }
+  to { transform: none; }
+}
+@keyframes sheet-out-right {
+  from { transform: none; }
+  to { transform: translateX(100%); }
+}
+@keyframes sheet-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: none; }
+}
+@keyframes sheet-out-left {
+  from { transform: none; }
+  to { transform: translateX(-100%); }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+.anim-overlay[data-state="open"] { animation: overlay-in 0.2s ease-out both; }
+.anim-overlay[data-state="closed"] { animation: overlay-out 0.16s ease-in both; }
+.anim-dialog[data-state="open"] { animation: dialog-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-dialog[data-state="closed"] { animation: dialog-out 0.16s ease-in both; }
+.anim-sheet-right[data-state="open"] { animation: sheet-in-right 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-sheet-right[data-state="closed"] { animation: sheet-out-right 0.22s ease-in both; }
+.anim-sheet-left[data-state="open"] { animation: sheet-in-left 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-sheet-left[data-state="closed"] { animation: sheet-out-left 0.22s ease-in both; }
+.anim-select[data-state="open"] { animation: pop-in 0.16s ease-out both; }
+
+/* ------------------------------------------------------------------ */
+/*  Event flash-card stack (landing hero)                               */
+/* ------------------------------------------------------------------ */
+.stack-card {
+  transition:
+    transform 0.46s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.38s ease,
+    box-shadow 0.3s ease;
+  will-change: transform, opacity;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.stack-card[data-dragging="true"] {
+  transition: none;
+  cursor: grabbing;
+}
+
+.stack-card[data-instant="true"] {
+  transition: none;
+}
+
+.stack-card[data-top="true"] {
+  cursor: grab;
+}
+
+/* ------------------------------------------------------------------ */
+/*  FullCalendar — dark glass theme                                     */
+/* ------------------------------------------------------------------ */
+.fc {
+  font-family: inherit;
+  --fc-border-color: rgba(255, 255, 255, 0.09);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: rgba(255, 255, 255, 0.04);
+  --fc-today-bg-color: rgba(96, 140, 255, 0.12);
+  --fc-highlight-color: rgba(96, 140, 255, 0.18);
+  --fc-now-indicator-color: #f5a15c;
+  --fc-event-border-color: transparent;
+  --fc-list-event-hover-bg-color: rgba(255, 255, 255, 0.06);
+  color: var(--color-body);
+}
+
+.fc .fc-toolbar.fc-header-toolbar {
+  margin-bottom: 1.25rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.fc .fc-toolbar-title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 500;
+  color: var(--color-ink);
+  letter-spacing: -0.02em;
+}
+
+.fc .fc-button {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--color-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.75rem;
+  box-shadow: none;
+  text-transform: capitalize;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.fc .fc-button:hover {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+  background: var(--color-navy-600);
+  border-color: var(--color-navy-500);
+  color: #fff;
+}
+
+.fc .fc-button:disabled {
+  opacity: 0.4;
+}
+
+.fc .fc-button:focus,
+.fc .fc-button-primary:focus {
+  box-shadow: 0 0 0 3px rgba(96, 140, 255, 0.35);
+}
+
+.fc .fc-button-group > .fc-button {
+  border-radius: 0;
+}
+.fc .fc-button-group > .fc-button:first-child {
+  border-radius: 0.75rem 0 0 0.75rem;
+}
+.fc .fc-button-group > .fc-button:last-child {
+  border-radius: 0 0.75rem 0.75rem 0;
+}
+
+.fc .fc-col-header-cell {
+  padding: 0.7rem 0;
+  background: transparent;
+}
+
+.fc .fc-col-header-cell-cushion {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+  text-decoration: none;
+}
+
+.fc-theme-standard td,
+.fc-theme-standard th,
+.fc-theme-standard .fc-scrollgrid {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.fc .fc-scrollgrid {
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.fc .fc-daygrid-day-number {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-body);
+  padding: 0.45rem 0.6rem;
+  text-decoration: none;
+}
+
+.fc .fc-day-other .fc-daygrid-day-number {
+  color: rgba(143, 155, 184, 0.45);
+}
+
+.fc .fc-day-today .fc-daygrid-day-number {
+  background: var(--color-navy-500);
+  color: #fff;
+  border-radius: 999px;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.3rem;
+  padding: 0;
+}
+
+.fc .fc-timegrid-slot-label-cushion,
+.fc .fc-timegrid-axis-cushion {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.fc .fc-more-link {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-navy-300);
+}
+
+.fc .fc-popover {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #0d1530;
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+}
+
+.fc .fc-popover-header {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.fc-event {
+  cursor: pointer;
+  border-radius: 0.5rem;
+  border: none;
+  margin: 1px 4px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.fc-event:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.8);
+}
+
+.fc-event:focus-visible {
+  outline: 2px solid var(--color-navy-400);
+  outline-offset: 1px;
+}
+
+.fc-chip-body {
+  width: 100%;
+  overflow: hidden;
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+  line-height: 1.25;
+}
+.fc-chip-title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.fc-chip-sub {
+  margin: 2px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  opacity: 0.75;
+}
+
+.fc-chip {
+  background: rgba(96, 140, 255, 0.2);
+  border-left: 3px solid #6c92ff;
+  color: #dbe6ff;
+}
+.fc-chip-approved {
+  background: rgba(52, 211, 153, 0.16);
+  border-left-color: #34d399;
+  color: #c9f6e3;
+}
+.fc-chip-medium {
+  background: rgba(251, 191, 36, 0.16);
+  border-left-color: #fbbf24;
+  color: #fdebb8;
+}
+.fc-chip-high {
+  background: rgba(251, 113, 133, 0.18);
+  border-left-color: #fb7185;
+  color: #ffd3da;
+}
+
+/* ------------------------------------------------------------------ */
+/*  One orchestrated entrance for the landing hero                      */
+/* ------------------------------------------------------------------ */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+.hero-rise {
+  animation: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
