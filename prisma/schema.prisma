@@ -1,0 +1,237 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  HOD
+  ORGANIZER
+  STUDENT
+}
+
+enum EventStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  CHANGES_REQUESTED
+  REJECTED
+}
+
+enum ConflictType {
+  VENUE_OVERLAP
+  ORGANIZER_DOUBLE_BOOKING
+  RESOURCE_CLASH
+  BUFFER_VIOLATION
+  STUDENT_GROUP_OVERLAP
+}
+
+enum Severity {
+  NONE
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ExpenseCategory {
+  VENUE
+  EQUIPMENT
+  CATERING
+  MARKETING
+  TRAVEL
+  PRIZES
+  MISCELLANEOUS
+}
+
+enum ExpenseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  role          Role           @default(STUDENT)
+  department    String?
+  avatar        String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  eventsOrganized Event[]       @relation("OrganizedEvents")
+  reviewsGiven    Review[]      @relation("UserReviews")
+  expensesCreated Expense[]     @relation("UserExpenses")
+  resolvedConflicts ConflictLog[] @relation("ResolvedConflicts")
+  notifications   Notification[]
+}
+
+model Venue {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  building    String
+  capacity    Int
+  facilities  String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  events      Event[]
+}
+
+model Resource {
+  id             String          @id @default(cuid())
+  name           String          @unique
+  type           String
+  totalQuantity  Int             @default(1)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  eventResources EventResource[]
+}
+
+model Event {
+  id                 String         @id @default(cuid())
+  title              String
+  description        String?
+  eventType          String
+  status             EventStatus    @default(PENDING)
+  startTime          DateTime
+  endTime            DateTime
+  expectedAttendance Int            @default(0)
+  attendeesGroup     String[]       @default([])
+  conflictSeverity   Severity       @default(NONE)
+  venueId            String
+  organizerId        String
+  overrideReason     String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  venue              Venue          @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  organizer          User           @relation("OrganizedEvents", fields: [organizerId], references: [id], onDelete: Restrict)
+  resources          EventResource[]
+  conflictLogs       ConflictLog[]
+  reviews            Review[]
+  budget             Budget?
+  expenses           Expense[]
+
+  @@index([venueId, startTime, endTime])
+  @@index([organizerId, startTime, endTime])
+  @@index([startTime, endTime])
+  @@index([status])
+}
+
+model EventResource {
+  id          String    @id @default(cuid())
+  eventId     String
+  resourceId  String
+  quantity    Int       @default(1)
+  createdAt   DateTime  @default(now())
+
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  resource    Resource  @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, resourceId])
+  @@index([eventId])
+  @@index([resourceId])
+}
+
+model ConflictLog {
+  id           String        @id @default(cuid())
+  eventId      String
+  conflictType ConflictType
+  severity     Severity
+  score        Float
+  details      Json
+  resolvedAt   DateTime?
+  resolvedById String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  resolvedBy   User?         @relation("ResolvedConflicts", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([eventId])
+  @@index([severity])
+  @@index([conflictType])
+}
+
+model Review {
+  id               String       @id @default(cuid())
+  eventId          String
+  reviewerId       String
+  decision         EventStatus
+  comment          String?
+  changesRequested String[]     @default([])
+  createdAt        DateTime     @default(now())
+
+  event            Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  reviewer         User         @relation("UserReviews", fields: [reviewerId], references: [id], onDelete: Restrict)
+
+  @@index([eventId])
+  @@index([reviewerId])
+}
+
+model Budget {
+  id          String    @id @default(cuid())
+  eventId     String    @unique
+  allocated   Float     @default(0.0)
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  eventId     String
+  title       String
+  amount      Float
+  category    ExpenseCategory
+  status      ExpenseStatus   @default(PENDING)
+  createdById String
+  receiptId   String?         @unique
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  event       Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy   User            @relation("UserExpenses", fields: [createdById], references: [id], onDelete: Restrict)
+  receipt     Receipt?        @relation(fields: [receiptId], references: [id], onDelete: SetNull)
+
+  @@index([eventId])
+  @@index([category])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+model Receipt {
+  id              String    @id @default(cuid())
+  fileUrl         String
+  fileName        String
+  fileSize        Int
+  mimeType        String
+  storageProvider String    @default("cloudinary")
+  uploadedAt      DateTime  @default(now())
+
+  expense         Expense?
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String    @default("INFO")
+  read      Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+}
