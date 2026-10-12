@@ -19,13 +19,15 @@ jobs:
           cache: "npm"
 
       - name: Install Dependencies
-        run: npm ci || npm install --legacy-peer-deps
+        run: |
+          npm ci || npm install --legacy-peer-deps
+          npm install --no-save --legacy-peer-deps prisma@^6.19.0 @prisma/client@^6.19.0
 
       - name: Run Prisma Migration Deploy
         if: env.DATABASE_URL != ''
         run: |
           echo "DATABASE_URL secret is present. Running prisma migrate deploy..."
-          npx prisma migrate deploy
+          npx --yes prisma@6 migrate deploy
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
