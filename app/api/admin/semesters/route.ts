@@ -3,7 +3,6 @@ import { prisma } from "@/src/lib/prisma";
 import { withRole } from "@/src/lib/rbac/server-guard";
 import { createSemesterSchema } from "@/src/lib/validation/admin";
 
-export const dynamic = "force-dynamic";
 
 export interface SemesterRecord {
   id: string;

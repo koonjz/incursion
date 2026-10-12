@@ -3,7 +3,6 @@ import { prisma } from "@/src/lib/prisma";
 import { withRole } from "@/src/lib/rbac/server-guard";
 import { createDepartmentBudgetSchema } from "@/src/lib/validation/admin";
 
-export const dynamic = "force-dynamic";
 
 export interface DepartmentBudgetRecord {
   id: string;

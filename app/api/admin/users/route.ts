@@ -3,7 +3,6 @@ import { prisma } from "@/src/lib/prisma";
 import { withRole } from "@/src/lib/rbac/server-guard";
 import { userQuerySchema, updateUserRoleSchema, toggleUserStatusSchema } from "@/src/lib/validation/admin";
 
-export const dynamic = "force-dynamic";
 
 /**
  * GET /api/admin/users - Searchable, paginated user list

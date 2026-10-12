@@ -4,7 +4,6 @@ import { withRole } from "@/src/lib/rbac/server-guard";
 import { updateSemesterSchema } from "@/src/lib/validation/admin";
 import { SemesterRecord } from "../route";
 
-export const dynamic = "force-dynamic";
 
 /**
  * PATCH /api/admin/semesters/[id] - Update semester metadata, status, or dates

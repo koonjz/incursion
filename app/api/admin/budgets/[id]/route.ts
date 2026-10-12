@@ -4,7 +4,6 @@ import { withRole } from "@/src/lib/rbac/server-guard";
 import { updateDepartmentBudgetSchema } from "@/src/lib/validation/admin";
 import { DepartmentBudgetRecord } from "../route";
 
-export const dynamic = "force-dynamic";
 
 /**
  * PATCH /api/admin/budgets/[id] - Update department budget
