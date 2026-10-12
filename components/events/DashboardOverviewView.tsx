@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader, SectionHeading } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { eventDateParts, formatTime } from "@/lib/utils";
+import { useAuth } from "@/lib/auth/auth-context";
+import { cn, eventDateParts, formatTime } from "@/lib/utils";
 import type { CampusEvent } from "@/lib/types/event";
 
 const VENUE_LOAD = [
@@ -78,6 +79,7 @@ function EventRow({ event, href, action, extra }: { event: CampusEvent; href: st
 }
 
 export function DashboardOverviewView() {
+  const { user, isAcmCore, canSeeConflicts, canAccessSubmissions } = useAuth();
   const sorted = [...MOCK_EVENTS].sort((a, b) => `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`));
   const upcoming = sorted.filter((e) => e.status === "approved").slice(0, 5);
   const pending = sorted.filter((e) => e.status === "pending").slice(0, 4);
@@ -95,34 +97,45 @@ export function DashboardOverviewView() {
   ).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const clubMax = Math.max(1, ...clubCounts.map(([, n]) => n));
 
-  const stats = [
-    { label: "Events this term", value: MOCK_EVENTS.length, icon: CalendarDays },
-    { label: "Waiting for review", value: MOCK_EVENTS.filter((e) => e.status === "pending").length, icon: FileCheck2 },
-    {
-      label: "Events with conflicts",
-      value: MOCK_EVENTS.filter((e) => e.conflictSeverity === "high" || e.conflictSeverity === "critical").length,
-      icon: ShieldAlert,
-    },
-  ];
+  const stats = canSeeConflicts
+    ? [
+        { label: "Events this term", value: MOCK_EVENTS.length, icon: CalendarDays },
+        { label: "Waiting for review", value: MOCK_EVENTS.filter((e) => e.status === "pending").length, icon: FileCheck2 },
+        {
+          label: "Events with conflicts",
+          value: MOCK_EVENTS.filter((e) => e.conflictSeverity === "high" || e.conflictSeverity === "critical").length,
+          icon: ShieldAlert,
+        },
+      ]
+    : [
+        { label: "Events this term", value: MOCK_EVENTS.length, icon: CalendarDays },
+        { label: "Approved events", value: upcoming.length, icon: CalendarDays },
+        { label: "Active campus clubs", value: clubCounts.length, icon: Users },
+      ];
+
+  const quickLinks = QUICK.filter((item) => {
+    if (item.href === "/verification" && !isAcmCore) return false;
+    if (item.href === "/events/my-submissions" && !canAccessSubmissions) return false;
+    return true;
+  });
+
+  const firstName = user?.name ? user.name.split(" ")[0] : "Rohan";
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Welcome back, Rohan"
-        description="Here is what is happening across campus this term."
+        title={`Welcome back, ${firstName}`}
+        description={
+          canSeeConflicts
+            ? "Here is what is happening across campus this term."
+            : "Submit events and explore what is happening across campus."
+        }
         actions={
-          <>
-            <Button asChild variant="outline">
-              <Link href="/calendar">
-                <CalendarDays /> Open calendar
-              </Link>
-            </Button>
-            <Button asChild>
-              <Link href="/events/new">
-                <Plus /> Submit event
-              </Link>
-            </Button>
-          </>
+          <Button asChild variant="outline">
+            <Link href="/calendar">
+              <CalendarDays /> Open calendar
+            </Link>
+          </Button>
         }
       />
 
@@ -140,8 +153,17 @@ export function DashboardOverviewView() {
         ))}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {QUICK.map(({ title, text, href, icon: Icon }) => (
+      <div
+        className={cn(
+          "grid gap-4 sm:grid-cols-2",
+          quickLinks.length === 4
+            ? "lg:grid-cols-4"
+            : quickLinks.length === 3
+            ? "lg:grid-cols-3"
+            : "lg:grid-cols-2"
+        )}
+      >
+        {quickLinks.map(({ title, text, href, icon: Icon }) => (
           <Link
             key={href}
             href={href}
@@ -181,32 +203,34 @@ export function DashboardOverviewView() {
             )}
           </Card>
 
-          <Card className="p-3 sm:p-4">
-            <SectionHeading
-              className="px-3 pb-2 pt-2"
-              title="Waiting for review"
-              action={
-                <Button asChild variant="link" size="sm">
-                  <Link href="/verification">Open queue</Link>
-                </Button>
-              }
-            />
-            {pending.length ? (
-              <ul>
-                {pending.map((e) => (
-                  <EventRow
-                    key={e.id}
-                    event={e}
-                    href={`/verification/${e.id}`}
-                    action="Review"
-                    extra={e.conflictSeverity !== "none" ? <SeverityBadge severity={e.conflictSeverity} className="hidden md:inline-flex" /> : null}
-                  />
-                ))}
-              </ul>
-            ) : (
-              <EmptyState icon={<FileCheck2 />} title="All caught up" description="No events are waiting for review." />
-            )}
-          </Card>
+          {isAcmCore && (
+            <Card className="p-3 sm:p-4">
+              <SectionHeading
+                className="px-3 pb-2 pt-2"
+                title="Waiting for review"
+                action={
+                  <Button asChild variant="link" size="sm">
+                    <Link href="/verification">Open queue</Link>
+                  </Button>
+                }
+              />
+              {pending.length ? (
+                <ul>
+                  {pending.map((e) => (
+                    <EventRow
+                      key={e.id}
+                      event={e}
+                      href={`/verification/${e.id}`}
+                      action="Review"
+                      extra={e.conflictSeverity !== "none" ? <SeverityBadge severity={e.conflictSeverity} className="hidden md:inline-flex" /> : null}
+                    />
+                  ))}
+                </ul>
+              ) : (
+                <EmptyState icon={<FileCheck2 />} title="All caught up" description="No events are waiting for review." />
+              )}
+            </Card>
+          )}
 
           <Card className="p-5 sm:p-6">
             <SectionHeading title="Recent activity" />
@@ -232,29 +256,31 @@ export function DashboardOverviewView() {
         </div>
 
         <div className="space-y-6">
-          <Card className="space-y-4 p-5 sm:p-6">
-            <SectionHeading title="Conflicts to look at" />
-            <ul className="space-y-3">
-              {conflicts.map((c) => (
-                <li key={c.id} className="glass-inset space-y-2.5 rounded-2xl p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <SeverityBadge severity={c.severity} />
-                    <span className="text-xs text-muted">
-                      {c.overlapMinutes > 0 ? `${c.overlapMinutes} min overlap` : "Capacity"}
-                    </span>
-                  </div>
-                  <p className="font-semibold leading-snug text-ink">{c.headline}</p>
-                  <p className="line-clamp-1 text-sm text-muted">{c.yourEvent.title}</p>
-                  <Link
-                    href={`/events/${c.targetEventId}/conflicts`}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-blue-300 hover:text-white"
-                  >
-                    See details <ArrowRight className="size-4" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Card>
+          {canSeeConflicts && (
+            <Card className="space-y-4 p-5 sm:p-6">
+              <SectionHeading title="Conflicts to look at" />
+              <ul className="space-y-3">
+                {conflicts.map((c) => (
+                  <li key={c.id} className="glass-inset space-y-2.5 rounded-2xl p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <SeverityBadge severity={c.severity} />
+                      <span className="text-xs text-muted">
+                        {c.overlapMinutes > 0 ? `${c.overlapMinutes} min overlap` : "Capacity"}
+                      </span>
+                    </div>
+                    <p className="font-semibold leading-snug text-ink">{c.headline}</p>
+                    <p className="line-clamp-1 text-sm text-muted">{c.yourEvent.title}</p>
+                    <Link
+                      href={`/events/${c.targetEventId}/conflicts`}
+                      className="inline-flex items-center gap-1 text-sm font-medium text-blue-300 hover:text-white"
+                    >
+                      See details <ArrowRight className="size-4" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
 
           <Card className="space-y-5 p-5 sm:p-6">
             <SectionHeading title="Venue bookings" action={<span className="text-sm text-muted">October</span>} />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Calendar, CheckCircle2, Edit, Send, ShieldCheck } from "lucide-react";
@@ -12,13 +12,25 @@ import { ConflictComparison } from "./ConflictComparison";
 import { ConflictTimeline } from "./ConflictTimeline";
 import { ConflictReason } from "./ConflictReason";
 import { SuggestedSlot } from "./SuggestedSlot";
+import { useAuth } from "@/lib/auth/auth-context";
 import type { CampusEvent } from "@/lib/types/event";
 import type { EventConflict, SuggestedSlot as SuggestedSlotType } from "@/lib/types/conflict";
 
 export function ConflictAnalysisView({ event, conflict }: { event: CampusEvent; conflict: EventConflict }) {
   const router = useRouter();
+  const { canSeeConflicts } = useAuth();
   const [selectedSlot, setSelectedSlot] = useState<SuggestedSlotType | null>(null);
   const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    if (!canSeeConflicts) {
+      router.replace(`/events/${event.id}`);
+    }
+  }, [canSeeConflicts, event.id, router]);
+
+  if (!canSeeConflicts) {
+    return null;
+  }
 
   const requestReschedule = () => {
     setSent(true);
