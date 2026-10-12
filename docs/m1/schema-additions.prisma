@@ -1,0 +1,114 @@
+// ==============================================================================
+// Milestone 1 (M1) Additive Prisma Schema
+// Contains NextAuth Adapter Models, Semester Lifecycle, Departmental Budgets,
+// and System Audit Logging.
+// ==============================================================================
+
+// ------------------------------------------------------------------------------
+// NextAuth.js Standard Adapter Models
+// ------------------------------------------------------------------------------
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ------------------------------------------------------------------------------
+// Semester Lifecycle Management
+// ------------------------------------------------------------------------------
+
+model Semester {
+  id          String             @id @default(cuid())
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean            @default(false)
+  isArchived  Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  budgets     DepartmentBudget[]
+
+  @@index([startDate, endDate])
+  @@index([isActive])
+}
+
+// ------------------------------------------------------------------------------
+// Departmental / Club Budget Allocation per Semester
+// ------------------------------------------------------------------------------
+
+model DepartmentBudget {
+  id            String   @id @default(cuid())
+  semesterId    String
+  department    String
+  amount        Float    @default(0.0)
+  allocated     Float    @default(0.0)
+  spent         Float    @default(0.0)
+  currency      String   @default("USD")
+  adminOverride Boolean  @default(false)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  semester      Semester @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+
+  @@unique([semesterId, department])
+  @@index([semesterId])
+  @@index([department])
+}
+
+// ------------------------------------------------------------------------------
+// Immutable Audit Logging
+// ------------------------------------------------------------------------------
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String
+  actorEmail  String
+  action      String   // e.g. "USER_ROLE_CHANGED", "SEMESTER_ACTIVATED", "BUDGET_OVERRIDE"
+  targetId    String?
+  targetType  String   // e.g. "User", "Semester", "DepartmentBudget"
+  beforeState Json?
+  afterState  Json?
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime @default(now())
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@index([timestamp])
+}
