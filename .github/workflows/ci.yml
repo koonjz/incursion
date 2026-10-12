@@ -1,0 +1,115 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Lint, Typecheck & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci || npm install --legacy-peer-deps
+
+      - name: Validate & Generate Prisma Client
+        run: |
+          npx prisma validate
+          npx prisma generate
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_db?schema=public"
+
+      - name: Run Linter
+        run: npm run lint || npx eslint .
+
+      - name: Run Typecheck
+        run: npx tsc --noEmit
+
+      - name: Run Unit Tests (Vitest)
+        run: npx vitest run
+        env:
+          NODE_ENV: test
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_db?schema=public"
+
+      - name: Build Next.js Application
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: 1
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_db?schema=public"
+          NEXTAUTH_URL: "http://localhost:3000"
+          NEXTAUTH_SECRET: "ci-build-placeholder-secret-at-least-32-chars"
+
+  e2e:
+    name: Playwright E2E Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: e2e_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci || npm install --legacy-peer-deps
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Setup Test Database Schema
+        run: |
+          npx prisma generate
+          npx prisma db push --skip-generate
+        env:
+          DATABASE_URL: "postgresql://test_user:test_password@localhost:5432/e2e_test_db?schema=public"
+
+      - name: Run E2E Tests
+        run: npx playwright test
+        env:
+          CI: true
+          NODE_ENV: test
+          E2E_AUTH: "true"
+          ALLOW_HEADER_AUTH: "true"
+          DATABASE_URL: "postgresql://test_user:test_password@localhost:5432/e2e_test_db?schema=public"
+          NEXTAUTH_URL: "http://localhost:3000"
+          NEXTAUTH_SECRET: "ci-playwright-secret-at-least-32-chars"
+
+      - name: Upload Playwright Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

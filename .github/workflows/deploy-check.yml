@@ -1,0 +1,38 @@
+name: Deploy Check & Database Migration
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  migrate:
+    name: Safe Database Migration Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci || npm install --legacy-peer-deps
+
+      - name: Run Prisma Migration Deploy
+        if: env.DATABASE_URL != ''
+        run: |
+          echo "DATABASE_URL secret is present. Running prisma migrate deploy..."
+          npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
+      - name: Skip Migration Deploy
+        if: env.DATABASE_URL == ''
+        run: |
+          echo "DATABASE_URL secret is not set in repository secrets. Skipping remote database migration."
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

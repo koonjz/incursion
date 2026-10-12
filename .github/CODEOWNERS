@@ -1,0 +1,11 @@
+# Global code ownership
+*       @koonjz
+
+# M1 Infrastructure, Auth & RBAC
+/.github/workflows/                 @koonjz
+/src/lib/auth/                      @koonjz
+/src/lib/rbac/                      @koonjz
+/app/admin/                         @koonjz
+/app/api/admin/                     @koonjz
+/prisma/                            @koonjz
+/docs/m1/                           @koonjz
