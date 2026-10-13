@@ -29,6 +29,8 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+import { AuthProvider } from "@/lib/auth/auth-context";
+
 export default function RootLayout({
   children,
 }: {
@@ -42,7 +44,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-sans text-body">
         <Backdrop />
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

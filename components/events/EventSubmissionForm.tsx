@@ -7,9 +7,12 @@ import { ConflictPanel } from "@/components/conflicts/ConflictPanel";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EventFormFields, useEventForm } from "./EventFormFields";
+import { useAuth } from "@/lib/auth/auth-context";
+import { cn } from "@/lib/utils";
 
 export function EventSubmissionForm() {
   const router = useRouter();
+  const { canSeeConflicts, canAccessSubmissions } = useAuth();
   const form = useEventForm({
     title: "Technical Workshop: Distributed Systems with Go",
     eventType: "Workshop",
@@ -46,20 +49,28 @@ export function EventSubmissionForm() {
           </h2>
           <p className="text-muted">
             {kind === "draft"
-              ? `“${form.values.title}” is saved. Finish it any time from My submissions.`
-              : `“${form.values.title}” is in the review queue. ACM Core will reply with a decision.`}
+              ? canAccessSubmissions
+                ? `“${form.values.title}” is saved. Finish it any time from My submissions.`
+                : `“${form.values.title}” is saved as a draft.`
+              : `“${form.values.title}” has been submitted for campus approval.`}
           </p>
         </div>
-        {kind === "review" && form.conflict && (
+        {canSeeConflicts && kind === "review" && form.conflict && (
           <p className="rounded-2xl bg-amber-400/10 p-4 text-left text-sm text-amber-200">
             Heads up: this event overlaps with another one. Reviewers will look at it closely, so consider one of the
             suggested free slots.
           </p>
         )}
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
-          <Button variant="outline" onClick={() => router.push("/events/my-submissions")}>
-            Go to My submissions
-          </Button>
+          {canAccessSubmissions ? (
+            <Button variant="outline" onClick={() => router.push("/events/my-submissions")}>
+              Go to My submissions
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => router.push("/dashboard")}>
+              Back to Overview
+            </Button>
+          )}
           <Button onClick={() => router.push("/calendar")}>
             View calendar <ArrowRight />
           </Button>
@@ -74,10 +85,14 @@ export function EventSubmissionForm() {
     <div className="space-y-8">
       <PageHeader
         title="Submit an event"
-        description="Fill in the details. We check for conflicts as you type, so you can fix them before review."
+        description={
+          canSeeConflicts
+            ? "Fill in the details. We check for conflicts as you type, so you can fix them before review."
+            : "Fill in the event details and submit it for campus schedule approval."
+        }
       />
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <div className={cn("grid items-start gap-6", canSeeConflicts ? "lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]" : "max-w-3xl")}>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -101,7 +116,9 @@ export function EventSubmissionForm() {
           )}
         </form>
 
-        <ConflictPanel conflict={form.conflict} onSelectSlot={form.applySlot} selectedSlotId={form.selectedSlotId} />
+        {canSeeConflicts && (
+          <ConflictPanel conflict={form.conflict} onSelectSlot={form.applySlot} selectedSlotId={form.selectedSlotId} />
+        )}
       </div>
     </div>
   );

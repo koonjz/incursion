@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Edit, Eye, FileText, Plus, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Edit, Eye, FileText, Search } from "lucide-react";
 import { MOCK_EVENTS } from "@/lib/mock/events";
 import { SeverityBadge } from "@/components/conflicts/SeverityBadge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { useAuth } from "@/lib/auth/auth-context";
 import { formatDate, formatTime } from "@/lib/utils";
 import type { EventStatus } from "@/lib/types/event";
 
@@ -28,8 +30,16 @@ const TABS: { value: Tab; label: string }[] = [
 ];
 
 export function MySubmissionsView() {
+  const router = useRouter();
+  const { isOtherClubCore } = useAuth();
   const [tab, setTab] = useState<Tab>("all");
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (isOtherClubCore) {
+      router.replace("/dashboard");
+    }
+  }, [isOtherClubCore, router]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: MOCK_EVENTS.length };
@@ -48,13 +58,6 @@ export function MySubmissionsView() {
       <PageHeader
         title="My submissions"
         description="Track your events, see review status and fix conflicts."
-        actions={
-          <Button asChild>
-            <Link href="/events/new">
-              <Plus /> Submit event
-            </Link>
-          </Button>
-        }
       />
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

@@ -9,6 +9,8 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from 
 import { Sidebar } from "./Sidebar";
 import { MOCK_EVENTS } from "@/lib/mock/events";
 
+import { useAuth } from "@/lib/auth/auth-context";
+
 const PENDING = MOCK_EVENTS.filter((e) => e.status === "pending").length;
 
 function pageTitle(pathname: string | null): string {
@@ -22,11 +24,13 @@ function pageTitle(pathname: string | null): string {
   if (pathname.startsWith("/events/")) return "Event details";
   if (pathname.startsWith("/verification/")) return "Review event";
   if (pathname === "/verification") return "Review queue";
+  if (pathname.startsWith("/expenses")) return "Expenses & Budgets";
   return "ACM Resolve";
 }
 
 export function Header() {
   const pathname = usePathname();
+  const { isAcmCore } = useAuth();
   const [open, setOpen] = useState(false);
 
   return (
@@ -50,21 +54,25 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button asChild variant="ghost" size="icon" className="relative" aria-label={`Review queue, ${PENDING} waiting`}>
-          <Link href="/verification">
-            <Bell />
-            {PENDING > 0 && (
-              <span className="absolute right-2 top-2 size-2 rounded-full bg-blue-500 ring-2 ring-[#0b1330]" />
-            )}
-          </Link>
-        </Button>
-        <Button asChild>
-          <Link href="/events/new">
-            <Plus />
-            <span className="hidden sm:inline">Submit event</span>
-            <span className="sm:hidden">New</span>
-          </Link>
-        </Button>
+        {isAcmCore && (
+          <Button asChild variant="ghost" size="icon" className="relative" aria-label={`Review queue, ${PENDING} waiting`}>
+            <Link href="/verification">
+              <Bell />
+              {PENDING > 0 && (
+                <span className="absolute right-2 top-2 size-2 rounded-full bg-blue-500 ring-2 ring-[#0b1330]" />
+              )}
+            </Link>
+          </Button>
+        )}
+        {pathname !== "/events/new" && (
+          <Button asChild>
+            <Link href="/events/new">
+              <Plus />
+              <span className="hidden sm:inline">Submit event</span>
+              <span className="sm:hidden">New</span>
+            </Link>
+          </Button>
+        )}
       </div>
     </header>
   );
