@@ -38,6 +38,17 @@ export function ExpensesBudgetView() {
     }
   }, [isAcmCore, router]);
 
+  useEffect(() => {
+    fetch("/api/expenses/claims?limit=100")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+          setClaims(data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   if (!isAcmCore) {
     return null;
   }
@@ -54,8 +65,26 @@ export function ExpensesBudgetView() {
     setReceiptModalOpen(true);
   };
 
-  const handleAddClaim = (newClaim: ExpenseClaim) => {
+  const handleAddClaim = async (newClaim: ExpenseClaim) => {
     setClaims((prev) => [newClaim, ...prev]);
+
+    // Persist to Neon DB
+    try {
+      await fetch("/api/expenses/claims", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: newClaim.description,
+          amount: newClaim.amount,
+          category: newClaim.category,
+          merchant: newClaim.merchant,
+          receiptName: newClaim.receiptName,
+          event: newClaim.event,
+        }),
+      });
+    } catch {
+      // ignore
+    }
 
     // Update the corresponding category spent amount
     setCategories((prev) =>

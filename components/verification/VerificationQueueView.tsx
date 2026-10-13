@@ -17,14 +17,17 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { useAuth } from "@/lib/auth/auth-context";
 import { cn, formatDate, formatTime } from "@/lib/utils";
 
+import type { CampusEvent } from "@/lib/types/event";
+
 type Tab = "all" | "pending" | "conflicts" | "changes";
 
-export function VerificationQueueView() {
+export function VerificationQueueView({ initialEvents }: { initialEvents?: CampusEvent[] } = {}) {
   const router = useRouter();
   const { isAcmCore } = useAuth();
   const [tab, setTab] = useState<Tab>("pending");
   const [query, setQuery] = useState("");
-  const s = MOCK_VERIFICATION_STATS;
+
+  const eventList = initialEvents && initialEvents.length > 0 ? initialEvents : MOCK_VERIFICATION_QUEUE.map((q) => q.event);
 
   useEffect(() => {
     if (!isAcmCore) {
@@ -36,7 +39,16 @@ export function VerificationQueueView() {
     return null;
   }
 
-  const rows = MOCK_VERIFICATION_QUEUE.filter(({ event }) => {
+  const queueItems = eventList.map((event) => ({
+    event,
+    hasConflicts: event.conflictSeverity !== "none",
+    conflictCount: event.conflictSeverity === "none" ? 0 : 1,
+    topSeverity: event.conflictSeverity,
+    queueScore: event.conflictSeverity === "critical" ? 95 : event.conflictSeverity === "high" ? 80 : 50,
+    daysInReview: 1,
+  }));
+
+  const rows = queueItems.filter(({ event }) => {
     const q = query.trim().toLowerCase();
     if (q && ![event.title, event.organizer, event.venue].some((t) => t.toLowerCase().includes(q))) return false;
     if (tab === "pending") return event.status === "pending";
@@ -45,10 +57,15 @@ export function VerificationQueueView() {
     return true;
   });
 
+  const pendingCount = eventList.filter((e) => e.status === "pending").length;
+  const highConflictsCount = eventList.filter((e) => e.conflictSeverity === "critical" || e.conflictSeverity === "high").length;
+  const changesRequestedCount = eventList.filter((e) => e.status === "changes_requested").length;
+  const s = { pendingCount, highConflictsCount, changesRequestedCount };
+
   const cards = [
-    { id: "pending" as const, label: "Waiting for review", value: s.pendingCount, icon: Clock, hint: "Not reviewed yet" },
-    { id: "conflicts" as const, label: "Serious conflicts", value: s.highConflictsCount, icon: AlertTriangle, hint: "Venue or time overlaps" },
-    { id: "changes" as const, label: "Changes requested", value: s.changesRequestedCount, icon: SlidersHorizontal, hint: "Waiting on organizers" },
+    { id: "pending" as const, label: "Waiting for review", value: pendingCount, icon: Clock, hint: "Not reviewed yet" },
+    { id: "conflicts" as const, label: "Serious conflicts", value: highConflictsCount, icon: AlertTriangle, hint: "Venue or time overlaps" },
+    { id: "changes" as const, label: "Changes requested", value: changesRequestedCount, icon: SlidersHorizontal, hint: "Waiting on organizers" },
   ];
 
   return (

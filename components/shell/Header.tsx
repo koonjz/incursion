@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, Menu, Plus } from "lucide-react";
@@ -32,6 +32,18 @@ export function Header() {
   const pathname = usePathname();
   const { isAcmCore } = useAuth();
   const [open, setOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(1);
+
+  useEffect(() => {
+    fetch("/api/events?status=PENDING")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.data && Array.isArray(data.data)) {
+          setPendingCount(data.data.length);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <header className="glass flex h-16 shrink-0 items-center justify-between gap-3 rounded-2xl px-3 sm:px-5">
@@ -55,10 +67,10 @@ export function Header() {
 
       <div className="flex items-center gap-2">
         {isAcmCore && (
-          <Button asChild variant="ghost" size="icon" className="relative" aria-label={`Review queue, ${PENDING} waiting`}>
+          <Button asChild variant="ghost" size="icon" className="relative" aria-label={`Review queue, ${pendingCount} waiting`}>
             <Link href="/verification">
               <Bell />
-              {PENDING > 0 && (
+              {pendingCount > 0 && (
                 <span className="absolute right-2 top-2 size-2 rounded-full bg-blue-500 ring-2 ring-[#0b1330]" />
               )}
             </Link>

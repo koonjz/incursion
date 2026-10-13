@@ -36,7 +36,7 @@ function chipClass(e: CampusEvent, canSeeConflicts: boolean = true) {
   return "fc-chip";
 }
 
-export function CampusCalendar() {
+export function CampusCalendar({ initialEvents }: { initialEvents?: CampusEvent[] } = {}) {
   const { canSeeConflicts } = useAuth();
   const [selected, setSelected] = useState<CampusEvent | null>(null);
   const [club, setClub] = useState("all");
@@ -46,11 +46,12 @@ export function CampusCalendar() {
   const [status, setStatus] = useState("all");
   const [conflictOnly, setConflictOnly] = useState(false);
 
+  const eventList = initialEvents && initialEvents.length > 0 ? initialEvents : MOCK_EVENTS;
   const filtersActive = club !== "all" || type !== "all" || venue !== "all" || audience !== "all" || status !== "all" || conflictOnly;
 
   const filtered = useMemo(
     () =>
-      MOCK_EVENTS.filter((e) => {
+      eventList.filter((e) => {
         if (club !== "all" && e.club !== club && e.organizer !== club) return false;
         if (type !== "all" && e.eventType !== type) return false;
         if (venue !== "all" && !e.venue.includes(venue)) return false;
@@ -59,7 +60,7 @@ export function CampusCalendar() {
         if (canSeeConflicts && conflictOnly && e.conflictSeverity === "none") return false;
         return true;
       }),
-    [club, type, venue, audience, status, conflictOnly, canSeeConflicts]
+    [eventList, club, type, venue, audience, status, conflictOnly, canSeeConflicts]
   );
 
   const calendarEvents = useMemo<BoardEvent[]>(

@@ -1,6 +1,7 @@
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -61,9 +62,12 @@ model User {
   role          Role           @default(STUDENT)
   department    String?
   avatar        String?
+  isActive      Boolean        @default(true)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
+  accounts      Account[]
+  sessions      Session[]
   eventsOrganized Event[]       @relation("OrganizedEvents")
   reviewsGiven    Review[]      @relation("UserReviews")
   expensesCreated Expense[]     @relation("UserExpenses")
@@ -235,3 +239,97 @@ model Notification {
   @@index([userId])
   @@index([read])
 }
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Semester {
+  id          String             @id @default(cuid())
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean            @default(false)
+  isArchived  Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  budgets     DepartmentBudget[]
+
+  @@index([startDate, endDate])
+  @@index([isActive])
+}
+
+model DepartmentBudget {
+  id            String   @id @default(cuid())
+  semesterId    String
+  department    String
+  amount        Float    @default(0.0)
+  allocated     Float    @default(0.0)
+  spent         Float    @default(0.0)
+  currency      String   @default("USD")
+  adminOverride Boolean  @default(false)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  semester      Semester @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+
+  @@unique([semesterId, department])
+  @@index([semesterId])
+  @@index([department])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String
+  actorEmail  String
+  action      String
+  targetId    String?
+  targetType  String
+  beforeState Json?
+  afterState  Json?
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime @default(now())
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@index([timestamp])
+}
+

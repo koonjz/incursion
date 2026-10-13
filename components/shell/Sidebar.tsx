@@ -16,11 +16,21 @@ interface SidebarProps {
   bare?: boolean;
 }
 
-const PENDING = MOCK_EVENTS.filter((e) => e.status === "pending").length;
-
 export function Sidebar({ onNavClick, className, bare = false }: SidebarProps) {
   const pathname = usePathname();
   const { user, isAcmCore, logout } = useAuth();
+  const [pendingBadge, setPendingBadge] = React.useState<number>(1);
+
+  React.useEffect(() => {
+    fetch("/api/events?status=PENDING")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.data && Array.isArray(data.data)) {
+          setPendingBadge(data.data.length);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const isOtherClub = user.role === "other_club_core";
 
@@ -37,7 +47,7 @@ export function Sidebar({ onNavClick, className, bare = false }: SidebarProps) {
         { title: "Submit event", href: "/events/new", icon: CalendarPlus },
         ...(isAcmCore
           ? [
-              { title: "Review queue", href: "/verification", icon: FileCheck2, badge: PENDING },
+              { title: "Review queue", href: "/verification", icon: FileCheck2, badge: pendingBadge },
               { title: "Expenses & Budgets", href: "/expenses", icon: WalletCards },
             ]
           : []),

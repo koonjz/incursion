@@ -78,19 +78,21 @@ function EventRow({ event, href, action, extra }: { event: CampusEvent; href: st
   );
 }
 
-export function DashboardOverviewView() {
+export function DashboardOverviewView({ initialEvents }: { initialEvents?: CampusEvent[] } = {}) {
   const { user, isAcmCore, canSeeConflicts, canAccessSubmissions } = useAuth();
-  const sorted = [...MOCK_EVENTS].sort((a, b) => `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`));
+  const eventList = initialEvents && initialEvents.length > 0 ? initialEvents : MOCK_EVENTS;
+  const sorted = [...eventList].sort((a, b) => `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`));
   const upcoming = sorted.filter((e) => e.status === "approved").slice(0, 5);
   const pending = sorted.filter((e) => e.status === "pending").slice(0, 4);
+
   const conflicts = Object.values(MOCK_CONFLICTS).slice(0, 3);
 
-  const activity = MOCK_EVENTS.flatMap((e) => (e.reviews ?? []).map((r) => ({ ...r, eventTitle: e.title, eventId: e.id })))
+  const activity = eventList.flatMap((e) => (e.reviews ?? []).map((r) => ({ ...r, eventTitle: e.title, eventId: e.id })))
     .sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)))
     .slice(0, 5);
 
   const clubCounts = Object.entries(
-    MOCK_EVENTS.reduce<Record<string, number>>((acc, e) => {
+    eventList.reduce<Record<string, number>>((acc, e) => {
       acc[e.club] = (acc[e.club] ?? 0) + 1;
       return acc;
     }, {})
@@ -99,16 +101,16 @@ export function DashboardOverviewView() {
 
   const stats = canSeeConflicts
     ? [
-        { label: "Events this term", value: MOCK_EVENTS.length, icon: CalendarDays },
-        { label: "Waiting for review", value: MOCK_EVENTS.filter((e) => e.status === "pending").length, icon: FileCheck2 },
+        { label: "Events this term", value: eventList.length, icon: CalendarDays },
+        { label: "Waiting for review", value: eventList.filter((e) => e.status === "pending").length, icon: FileCheck2 },
         {
           label: "Events with conflicts",
-          value: MOCK_EVENTS.filter((e) => e.conflictSeverity === "high" || e.conflictSeverity === "critical").length,
+          value: eventList.filter((e) => e.conflictSeverity === "high" || e.conflictSeverity === "critical").length,
           icon: ShieldAlert,
         },
       ]
     : [
-        { label: "Events this term", value: MOCK_EVENTS.length, icon: CalendarDays },
+        { label: "Events this term", value: eventList.length, icon: CalendarDays },
         { label: "Approved events", value: upcoming.length, icon: CalendarDays },
         { label: "Active campus clubs", value: clubCounts.length, icon: Users },
       ];

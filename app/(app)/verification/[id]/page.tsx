@@ -1,15 +1,10 @@
 import React from "react";
 import { notFound } from "next/navigation";
-import { MOCK_EVENTS } from "@/lib/mock/events";
+import { prisma } from "@/src/lib/prisma";
+import { mapPrismaEventToCampusEvent } from "@/lib/events";
 import { MOCK_CONFLICTS } from "@/lib/mock/conflicts";
 import { VerificationDetailWorkspace } from "@/components/verification/VerificationDetailWorkspace";
 import { Metadata } from "next";
-
-export async function generateStaticParams() {
-  return MOCK_EVENTS.map((event) => ({
-    id: event.id,
-  }));
-}
 
 interface VerificationDetailPageProps {
   params: Promise<{ id: string }>;
@@ -17,22 +12,34 @@ interface VerificationDetailPageProps {
 
 export async function generateMetadata({ params }: VerificationDetailPageProps): Promise<Metadata> {
   const { id } = await params;
-  const event = MOCK_EVENTS.find((e) => e.id === id);
-  if (!event) return { title: "Verification Workspace | ACM Resolve" };
+  const dbEvent = await prisma.event.findUnique({
+    where: { id },
+  }).catch(() => null);
+
+  if (!dbEvent) return { title: "Verification Workspace | ACM Resolve" };
   return {
-    title: `Review: ${event.title} | ACM Resolve`,
-    description: `Review workspace for ${event.title}.`,
+    title: `Review: ${dbEvent.title} | ACM Resolve`,
+    description: `Review workspace for ${dbEvent.title}.`,
   };
 }
 
 export default async function VerificationDetailPage({ params }: VerificationDetailPageProps) {
   const { id } = await params;
-  const event = MOCK_EVENTS.find((e) => e.id === id);
+  const dbEvent = await prisma.event.findUnique({
+    where: { id },
+    include: {
+      venue: true,
+      organizer: true,
+      conflictLogs: true,
+      reviews: { include: { reviewer: true } },
+    },
+  }).catch(() => null);
 
-  if (!event) {
+  if (!dbEvent) {
     notFound();
   }
 
+  const event = mapPrismaEventToCampusEvent(dbEvent);
   const conflict = (event.conflictId && MOCK_CONFLICTS[event.conflictId]) || null;
 
   return <VerificationDetailWorkspace event={event} conflict={conflict} />;

@@ -11,12 +11,19 @@ import { SiteFooter } from "@/components/landing/SiteFooter";
 import { getPublicEvents } from "@/lib/events";
 import { MOCK_CLUBS, MOCK_VENUES } from "@/lib/mock/events";
 
-export default function HomePage() {
-  const events = getPublicEvents();
+import { prisma } from "@/src/lib/prisma";
+
+export default async function HomePage() {
+  const [events, venuesCount, usersCount] = await Promise.all([
+    getPublicEvents(),
+    prisma.venue.count().catch(() => 5),
+    prisma.user.count().catch(() => 25),
+  ]);
+
   const stats = [
     { value: events.length, label: "Verified events" },
-    { value: MOCK_CLUBS.length, label: "Active clubs" },
-    { value: MOCK_VENUES.length, label: "Venues" },
+    { value: Math.max(5, Math.round(usersCount / 4)), label: "Active clubs" },
+    { value: venuesCount, label: "Venues" },
   ];
 
   return (

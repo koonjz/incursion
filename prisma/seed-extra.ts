@@ -5,7 +5,19 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Seeding ACM Resolve database...");
 
-  // 1. SEED USERS (1 Admin, 2 HODs, 5 Organizers, 20 Students)
+  // 1. SEED USERS (Admins, HODs, Organizers, Students)
+  await prisma.user.upsert({
+    where: { email: "kunjp0039@gmail.com" },
+    update: { role: Role.ADMIN },
+    create: {
+      id: "usr-kunjp",
+      name: "Kunj Patel",
+      email: "kunjp0039@gmail.com",
+      role: Role.ADMIN,
+      department: "Administration",
+    },
+  });
+
   const admin = await prisma.user.upsert({
     where: { email: "admin@campus.edu" },
     update: {},

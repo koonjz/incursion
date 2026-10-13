@@ -1,12 +1,14 @@
 import React from "react";
 import { Metadata } from "next";
 import { DashboardOverviewView } from "@/components/events/DashboardOverviewView";
+import { getAllCampusEvents } from "@/lib/events";
 
 export const metadata: Metadata = {
   title: "Overview | ACM Resolve",
   description: "See upcoming events, pending reviews and conflicts across campus.",
 };
 
-export default function DashboardPage() {
-  return <DashboardOverviewView />;
+export default async function DashboardPage() {
+  const events = await getAllCampusEvents();
+  return <DashboardOverviewView initialEvents={events} />;
 }

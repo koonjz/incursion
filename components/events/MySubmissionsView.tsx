@@ -16,7 +16,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useAuth } from "@/lib/auth/auth-context";
 import { formatDate, formatTime } from "@/lib/utils";
-import type { EventStatus } from "@/lib/types/event";
+import type { CampusEvent, EventStatus } from "@/lib/types/event";
 
 type Tab = "all" | EventStatus;
 
@@ -29,11 +29,13 @@ const TABS: { value: Tab; label: string }[] = [
   { value: "rejected", label: "Rejected" },
 ];
 
-export function MySubmissionsView() {
+export function MySubmissionsView({ initialEvents }: { initialEvents?: CampusEvent[] } = {}) {
   const router = useRouter();
   const { isOtherClubCore } = useAuth();
   const [tab, setTab] = useState<Tab>("all");
   const [query, setQuery] = useState("");
+
+  const eventList = initialEvents && initialEvents.length > 0 ? initialEvents : MOCK_EVENTS;
 
   useEffect(() => {
     if (isOtherClubCore) {
@@ -42,12 +44,12 @@ export function MySubmissionsView() {
   }, [isOtherClubCore, router]);
 
   const counts = useMemo(() => {
-    const c: Record<string, number> = { all: MOCK_EVENTS.length };
-    for (const e of MOCK_EVENTS) c[e.status] = (c[e.status] ?? 0) + 1;
+    const c: Record<string, number> = { all: eventList.length };
+    for (const e of eventList) c[e.status] = (c[e.status] ?? 0) + 1;
     return c;
-  }, []);
+  }, [eventList]);
 
-  const rows = MOCK_EVENTS.filter((e) => {
+  const rows = eventList.filter((e) => {
     const q = query.trim().toLowerCase();
     if (q && !e.title.toLowerCase().includes(q) && !e.venue.toLowerCase().includes(q)) return false;
     return tab === "all" || e.status === tab;
