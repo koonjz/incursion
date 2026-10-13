@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Fact, TagList } from "@/components/shared/Facts";
+import { useAuth } from "@/lib/auth/auth-context";
 import { formatDate, formatLongDate, formatTime } from "@/lib/utils";
 import type { CampusEvent } from "@/lib/types/event";
 
@@ -24,6 +25,7 @@ const DECISION_TONE: Record<string, string> = {
 };
 
 export function EventDetailsView({ event }: { event: CampusEvent }) {
+  const { canSeeConflicts } = useAuth();
   const conflict = event.conflictId ? MOCK_CONFLICTS[event.conflictId] : null;
 
   return (
@@ -34,14 +36,14 @@ export function EventDetailsView({ event }: { event: CampusEvent }) {
           <>
             <Badge>{event.eventType}</Badge>
             <StatusBadge status={event.status} />
-            {event.conflictSeverity !== "none" && <SeverityBadge severity={event.conflictSeverity} />}
+            {canSeeConflicts && event.conflictSeverity !== "none" && <SeverityBadge severity={event.conflictSeverity} />}
           </>
         }
         title={event.title}
         description={`Hosted by ${event.organizer}`}
         actions={
           <>
-            {conflict && (
+            {canSeeConflicts && conflict && (
               <Button asChild variant="outline">
                 <Link href={`/events/${event.id}/conflicts`}>
                   <ShieldAlert /> Conflict details
@@ -112,29 +114,31 @@ export function EventDetailsView({ event }: { event: CampusEvent }) {
         </div>
 
         <div className="space-y-6">
-          <Card className="space-y-5 p-5 sm:p-7">
-            <h2 className="text-lg font-semibold text-ink">Conflict check</h2>
-            <ConflictSummary
-              eventId={event.id}
-              severity={event.conflictSeverity}
-              conflictId={event.conflictId}
-              summaryText={conflict?.summary || "Nothing else is using this venue or time."}
-              showActions={false}
-            />
-            {conflict && (
-              <>
-                <ConflictTimeline
-                  yourEvent={conflict.yourEvent}
-                  competingEvent={conflict.competingEvent}
-                  overlapMinutes={conflict.overlapMinutes}
-                  overlapWindow={conflict.overlapWindow}
-                />
-                <Button asChild variant="outline" className="w-full">
-                  <Link href={`/events/${event.id}/conflicts`}>See full conflict details</Link>
-                </Button>
-              </>
-            )}
-          </Card>
+          {canSeeConflicts && (
+            <Card className="space-y-5 p-5 sm:p-7">
+              <h2 className="text-lg font-semibold text-ink">Conflict check</h2>
+              <ConflictSummary
+                eventId={event.id}
+                severity={event.conflictSeverity}
+                conflictId={event.conflictId}
+                summaryText={conflict?.summary || "Nothing else is using this venue or time."}
+                showActions={false}
+              />
+              {conflict && (
+                <>
+                  <ConflictTimeline
+                    yourEvent={conflict.yourEvent}
+                    competingEvent={conflict.competingEvent}
+                    overlapMinutes={conflict.overlapMinutes}
+                    overlapWindow={conflict.overlapWindow}
+                  />
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href={`/events/${event.id}/conflicts`}>See full conflict details</Link>
+                  </Button>
+                </>
+              )}
+            </Card>
+          )}
 
           <Card className="space-y-4 p-5 sm:p-7">
             <h2 className="text-lg font-semibold text-ink">Organizer</h2>

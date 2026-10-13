@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Clock, Eye, MapPin, Plus, RotateCcw, ShieldAlert, Users } from "lucide-react";
+import { CalendarDays, Clock, Eye, MapPin, RotateCcw, ShieldAlert, Users } from "lucide-react";
 import { MOCK_EVENTS, MOCK_CLUBS, MOCK_VENUES } from "@/lib/mock/events";
 import { ConflictSummary } from "@/components/conflicts/ConflictSummary";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Fact, TagList } from "@/components/shared/Facts";
 import { AUDIENCE_OPTIONS, EVENT_TYPE_OPTIONS } from "@/lib/events";
+import { useAuth } from "@/lib/auth/auth-context";
 import { cn, formatLongDate, formatTime } from "@/lib/utils";
 import type { CampusEvent } from "@/lib/types/event";
 
@@ -26,14 +27,17 @@ const LEGEND = [
   { label: "Serious conflict", dot: "bg-rose-500" },
 ];
 
-function chipClass(e: CampusEvent) {
-  if (e.conflictSeverity === "critical" || e.conflictSeverity === "high") return "fc-chip fc-chip-high";
-  if (e.conflictSeverity === "medium") return "fc-chip fc-chip-medium";
+function chipClass(e: CampusEvent, canSeeConflicts: boolean = true) {
+  if (canSeeConflicts) {
+    if (e.conflictSeverity === "critical" || e.conflictSeverity === "high") return "fc-chip fc-chip-high";
+    if (e.conflictSeverity === "medium") return "fc-chip fc-chip-medium";
+  }
   if (e.status === "approved") return "fc-chip fc-chip-approved";
   return "fc-chip";
 }
 
 export function CampusCalendar() {
+  const { canSeeConflicts } = useAuth();
   const [selected, setSelected] = useState<CampusEvent | null>(null);
   const [club, setClub] = useState("all");
   const [type, setType] = useState("all");
@@ -52,10 +56,10 @@ export function CampusCalendar() {
         if (venue !== "all" && !e.venue.includes(venue)) return false;
         if (audience !== "all" && !e.audience.includes(audience)) return false;
         if (status !== "all" && e.status !== status) return false;
-        if (conflictOnly && e.conflictSeverity === "none") return false;
+        if (canSeeConflicts && conflictOnly && e.conflictSeverity === "none") return false;
         return true;
       }),
-    [club, type, venue, audience, status, conflictOnly]
+    [club, type, venue, audience, status, conflictOnly, canSeeConflicts]
   );
 
   const calendarEvents = useMemo<BoardEvent[]>(
@@ -65,10 +69,10 @@ export function CampusCalendar() {
         title: e.title,
         start: `${e.date}T${e.startTime}:00`,
         end: `${e.date}T${e.endTime}:00`,
-        classNames: chipClass(e).split(" "),
+        classNames: chipClass(e, canSeeConflicts).split(" "),
         sub: `${formatTime(e.startTime)} · ${e.venue}`,
       })),
-    [filtered]
+    [filtered, canSeeConflicts]
   );
 
   const reset = () => {
@@ -89,13 +93,10 @@ export function CampusCalendar() {
     <div className="space-y-6">
       <PageHeader
         title="Campus calendar"
-        description="Everything happening across campus, with conflicts highlighted."
-        actions={
-          <Button asChild>
-            <Link href="/events/new">
-              <Plus /> Submit event
-            </Link>
-          </Button>
+        description={
+          canSeeConflicts
+            ? "Everything happening across campus, with conflicts highlighted."
+            : "Everything happening across campus this term."
         }
       />
 
@@ -111,7 +112,7 @@ export function CampusCalendar() {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+        <div className={cn("grid grid-cols-2 gap-3", canSeeConflicts ? "lg:grid-cols-6" : "lg:grid-cols-5")}>
           <div>
             <Label htmlFor="f-club" className="text-xs text-muted">Club</Label>
             <NativeSelect id="f-club" value={club} onChange={(e) => setClub(e.target.value)}>
@@ -158,27 +159,29 @@ export function CampusCalendar() {
               <option value="draft">Draft</option>
             </NativeSelect>
           </div>
-          <div className="flex items-end">
-            <button
-              type="button"
-              aria-pressed={conflictOnly}
-              onClick={() => setConflictOnly((v) => !v)}
-              className={cn(
-                "inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border text-sm font-medium transition-colors duration-200",
-                conflictOnly
-                  ? "border-amber-400/35 bg-amber-400/10 text-amber-200"
-                  : "border-white/14 bg-white/[0.06] text-body hover:border-white/25 hover:bg-white/10"
-              )}
-            >
-              <ShieldAlert className="size-4" /> Conflicts only
-            </button>
-          </div>
+          {canSeeConflicts && (
+            <div className="flex items-end">
+              <button
+                type="button"
+                aria-pressed={conflictOnly}
+                onClick={() => setConflictOnly((v) => !v)}
+                className={cn(
+                  "inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border text-sm font-medium transition-colors duration-200",
+                  conflictOnly
+                    ? "border-amber-400/35 bg-amber-400/10 text-amber-200"
+                    : "border-white/14 bg-white/[0.06] text-body hover:border-white/25 hover:bg-white/10"
+                )}
+              >
+                <ShieldAlert className="size-4" /> Conflicts only
+              </button>
+            </div>
+          )}
         </div>
       </Card>
 
       <Card className="p-4 sm:p-6">
         <ul className="mb-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted" aria-label="Legend">
-          {LEGEND.map((l) => (
+          {LEGEND.filter((l) => canSeeConflicts || !l.label.toLowerCase().includes("conflict")).map((l) => (
             <li key={l.label} className="flex items-center gap-2">
               <span className={cn("size-2.5 rounded-full", l.dot)} />
               {l.label}
@@ -218,16 +221,18 @@ export function CampusCalendar() {
 
               <p className="text-[15px] leading-relaxed text-body">{selected.description}</p>
 
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-ink">Conflict check</p>
-                <ConflictSummary
-                  eventId={selected.id}
-                  severity={selected.conflictSeverity}
-                  conflictId={selected.conflictId}
-                  summaryText={selected.conflictSeverity !== "none" ? "This event overlaps with another one." : undefined}
-                  showActions={selected.conflictSeverity !== "none"}
-                />
-              </div>
+              {canSeeConflicts && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-ink">Conflict check</p>
+                  <ConflictSummary
+                    eventId={selected.id}
+                    severity={selected.conflictSeverity}
+                    conflictId={selected.conflictId}
+                    summaryText={selected.conflictSeverity !== "none" ? "This event overlaps with another one." : undefined}
+                    showActions={selected.conflictSeverity !== "none"}
+                  />
+                </div>
+              )}
 
               <Button asChild className="w-full">
                 <Link href={`/events/${selected.id}`}>

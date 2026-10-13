@@ -9,13 +9,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/shared/Logo";
 
+import { useAuth, UserRole } from "@/lib/auth/auth-context";
+
 export function LoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const { login } = useAuth();
+  const [selectedRole, setSelectedRole] = useState<UserRole>("acm_core");
+  const [email, setEmail] = useState("rohan.varma@campus.edu");
+  const [password, setPassword] = useState("••••••••••••");
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const handleRoleSelect = (role: UserRole) => {
+    setSelectedRole(role);
+    if (role === "acm_core") {
+      setEmail("rohan.varma@campus.edu");
+    } else if (role === "other_club_core") {
+      setEmail("priya.patel@robotics.campus.edu");
+    } else {
+      setEmail("aarav.sharma@campus.edu");
+    }
+  };
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,8 +44,25 @@ export function LoginForm() {
     }
     setError(null);
     setLoading(true);
-    // Demo sign-in: replace with your real auth call.
-    setTimeout(() => router.push("/dashboard"), 650);
+
+    let role: UserRole = selectedRole;
+    if (email.toLowerCase().includes("priya") || email.toLowerCase().includes("robotics") || selectedRole === "other_club_core") {
+      role = "other_club_core";
+    } else if (email.toLowerCase().includes("aarav") || email.toLowerCase().includes("executive") || selectedRole === "acm_executive") {
+      role = "acm_executive";
+    } else if (email.toLowerCase().includes("rohan") || email.toLowerCase().includes("core") || selectedRole === "acm_core") {
+      role = "acm_core";
+    }
+
+    const name =
+      role === "acm_core"
+        ? "Rohan Varma"
+        : role === "other_club_core"
+        ? "Priya Patel"
+        : "Aarav Sharma";
+
+    login(role, email, name);
+    setTimeout(() => router.push("/dashboard"), 500);
   };
 
   return (
@@ -69,7 +101,43 @@ export function LoginForm() {
           <h2 className="font-display text-3xl font-medium text-ink">Sign in</h2>
           <p className="mt-1.5 text-sm text-muted">Use your campus email address.</p>
 
-          <form onSubmit={onSubmit} noValidate className="mt-7 space-y-5">
+          <div className="mt-5 grid grid-cols-3 gap-1.5 rounded-xl bg-white/[0.04] p-1 border border-white/8">
+            <button
+              type="button"
+              onClick={() => handleRoleSelect("acm_core")}
+              className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
+                selectedRole === "acm_core"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              ACM Core
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRoleSelect("acm_executive")}
+              className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
+                selectedRole === "acm_executive"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              ACM Executive
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRoleSelect("other_club_core")}
+              className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
+                selectedRole === "other_club_core"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              Other Clubs Core
+            </button>
+          </div>
+
+          <form onSubmit={onSubmit} noValidate className="mt-5 space-y-5">
             <div>
               <Label htmlFor="email">Email</Label>
               <Input

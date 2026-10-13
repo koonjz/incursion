@@ -7,10 +7,13 @@ import { ConflictPanel } from "@/components/conflicts/ConflictPanel";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EventFormFields, useEventForm } from "./EventFormFields";
+import { useAuth } from "@/lib/auth/auth-context";
+import { cn } from "@/lib/utils";
 import type { CampusEvent } from "@/lib/types/event";
 
 export function EventEditView({ event }: { event: CampusEvent }) {
   const router = useRouter();
+  const { canSeeConflicts } = useAuth();
   const form = useEventForm({
     title: event.title,
     eventType: event.eventType,
@@ -40,7 +43,11 @@ export function EventEditView({ event }: { event: CampusEvent }) {
       <PageHeader
         back={{ href: `/events/${event.id}`, label: "Back to event" }}
         title="Edit event"
-        description="Change the schedule, venue or details. The conflict check updates as you edit."
+        description={
+          canSeeConflicts
+            ? "Change the schedule, venue or details. The conflict check updates as you edit."
+            : "Change the schedule, venue or details."
+        }
         actions={
           <Button onClick={save} disabled={state !== "idle" || !form.valid}>
             {state === "saved" ? <CheckCircle2 /> : state === "saving" ? <Loader2 className="animate-spin" /> : <Save />}
@@ -49,9 +56,11 @@ export function EventEditView({ event }: { event: CampusEvent }) {
         }
       />
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <div className={cn("grid items-start gap-6", canSeeConflicts ? "lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]" : "max-w-3xl")}>
         <EventFormFields form={form} />
-        <ConflictPanel conflict={form.conflict} onSelectSlot={form.applySlot} selectedSlotId={form.selectedSlotId} />
+        {canSeeConflicts && (
+          <ConflictPanel conflict={form.conflict} onSelectSlot={form.applySlot} selectedSlotId={form.selectedSlotId} />
+        )}
       </div>
     </div>
   );

@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Fact, TagList } from "@/components/shared/Facts";
+import { useAuth } from "@/lib/auth/auth-context";
 import { formatDate, formatLongDate, formatTime } from "@/lib/utils";
 import type { CampusEvent } from "@/lib/types/event";
 import type { EventConflict } from "@/lib/types/conflict";
@@ -30,11 +31,22 @@ const RESULT: Record<Decision, { title: string; text: string }> = {
 
 export function VerificationDetailWorkspace({ event, conflict }: { event: CampusEvent; conflict?: EventConflict | null }) {
   const router = useRouter();
+  const { isAcmCore } = useAuth();
   const [notes, setNotes] = useState("");
   const [changes, setChanges] = useState("");
   const [askingChanges, setAskingChanges] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Decision | null>(null);
+
+  React.useEffect(() => {
+    if (!isAcmCore) {
+      router.replace("/dashboard");
+    }
+  }, [isAcmCore, router]);
+
+  if (!isAcmCore) {
+    return null;
+  }
 
   const decide = (d: Decision) => {
     setBusy(true);

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowRight, Clock, Inbox, Search, SlidersHorizontal } from "lucide-react";
 import { MOCK_VERIFICATION_QUEUE, MOCK_VERIFICATION_STATS } from "@/lib/mock/verification";
 import { SeverityBadge } from "@/components/conflicts/SeverityBadge";
@@ -13,14 +14,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { useAuth } from "@/lib/auth/auth-context";
 import { cn, formatDate, formatTime } from "@/lib/utils";
 
 type Tab = "all" | "pending" | "conflicts" | "changes";
 
 export function VerificationQueueView() {
+  const router = useRouter();
+  const { isAcmCore } = useAuth();
   const [tab, setTab] = useState<Tab>("pending");
   const [query, setQuery] = useState("");
   const s = MOCK_VERIFICATION_STATS;
+
+  useEffect(() => {
+    if (!isAcmCore) {
+      router.replace("/dashboard");
+    }
+  }, [isAcmCore, router]);
+
+  if (!isAcmCore) {
+    return null;
+  }
 
   const rows = MOCK_VERIFICATION_QUEUE.filter(({ event }) => {
     const q = query.trim().toLowerCase();
