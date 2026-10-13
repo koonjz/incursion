@@ -1,0 +1,6 @@
+# Ignore local database dumps and temporary export files
+*.sql
+*.dump
+*.tar
+*.gz
+*.bak

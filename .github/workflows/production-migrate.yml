@@ -1,0 +1,86 @@
+name: Production Database Migration & Health Smoke Test
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: production-db-migration
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate-production:
+    name: Production Database Migration
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: |
+          npm ci || npm install --legacy-peer-deps
+          npm install --no-save --legacy-peer-deps prisma@^6.19.0 @prisma/client@^6.19.0
+
+      - name: Run Safe Migration via DIRECT_URL
+        run: |
+          bash scripts/db/migrate-deploy.sh
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  smoke-test:
+    name: Post-Deploy Health Smoke Test
+    needs: migrate-production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Deployment & Run Health Check
+        run: |
+          PROD_URL="${{ vars.PRODUCTION_URL || secrets.PRODUCTION_URL }}"
+          if [ -z "$PROD_URL" ]; then
+            echo "PRODUCTION_URL is not set. Skipping live health endpoint smoke test."
+            exit 0
+          fi
+
+          # Strip trailing slash if present
+          PROD_URL="${PROD_URL%/}"
+          HEALTH_ENDPOINT="${PROD_URL}/api/health"
+
+          echo "Pinging health endpoint: $HEALTH_ENDPOINT"
+
+          # Retry loop with backoff (waiting up to 90 seconds for Vercel deploy to finish)
+          ATTEMPTS=0
+          MAX_ATTEMPTS=9
+          DELAY=10
+
+          while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+            ATTEMPTS=$((ATTEMPTS+1))
+            echo "Attempt $ATTEMPTS/$MAX_ATTEMPTS: Checking $HEALTH_ENDPOINT..."
+            
+            HTTP_STATUS=$(curl -s -o /tmp/health_response.json -w "%{http_code}" "$HEALTH_ENDPOINT" || echo "000")
+
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+              echo "Health check succeeded (HTTP 200)!"
+              cat /tmp/health_response.json
+              exit 0
+            else
+              echo "Health check returned status $HTTP_STATUS. Waiting $DELAY seconds..."
+              sleep $DELAY
+            fi
+          done
+
+          echo "FATAL: Health check failed to return HTTP 200 after $MAX_ATTEMPTS attempts."
+          if [ -f /tmp/health_response.json ]; then
+            cat /tmp/health_response.json
+          fi
+          exit 1

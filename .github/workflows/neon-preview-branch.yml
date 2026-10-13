@@ -1,0 +1,83 @@
+name: Neon Ephemeral Preview Branch & E2E Tests
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+concurrency:
+  group: neon-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  neon-preview:
+    name: Provision Neon Branch & Run Migrations
+    runs-on: ubuntu-latest
+    if: ${{ vars.NEON_PROJECT_ID != '' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Create Ephemeral Neon Branch
+        id: create-neon-branch
+        uses: neondatabase/create-branch-action@v5
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch_name: preview/pr-${{ github.event.pull_request.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: |
+          npm ci || npm install --legacy-peer-deps
+          npm install --no-save --legacy-peer-deps prisma@^6.19.0 @prisma/client@^6.19.0
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Deploy Migrations to Neon Preview Branch
+        run: |
+          echo "Applying migrations to Neon preview branch: preview/pr-${{ github.event.pull_request.number }}"
+          # The create-branch-action exposes db_url and db_url_with_pooler
+          DATABASE_URL="${{ steps.create-neon-branch.outputs.db_url }}" npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ steps.create-neon-branch.outputs.db_url }}
+
+      - name: Post Branch Details to Pull Request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branchName = `preview/pr-${context.payload.pull_request.number}`;
+            const commentBody = `### 🐘 Neon Ephemeral Database Branch Provisioned\n\n- **Branch Name:** \`${branchName}\`\n- **Status:** Migrations successfully applied\n- **Compute Mode:** Serverless autosuspend enabled\n\n*This database branch will be automatically deleted when this Pull Request is closed.*`;
+            
+            // Check existing comments to avoid spam
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            
+            const botComment = comments.find(c => c.body.includes('Neon Ephemeral Database Branch'));
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: commentBody
+              });
+            }
