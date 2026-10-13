@@ -9,12 +9,18 @@ export const metadata: Metadata = {
   description: "Access forbidden or insufficient privileges.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function ForbiddenPage({
   searchParams,
 }: {
   searchParams?: Promise<{ reason?: string }>;
 }) {
-  return <ForbiddenView searchParams={searchParams} />;
+  return (
+    <React.Suspense fallback={<div className="min-h-screen bg-navy-950" />}>
+      <ForbiddenView searchParams={searchParams} />
+    </React.Suspense>
+  );
 }
 
 async function ForbiddenView({

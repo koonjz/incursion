@@ -33,8 +33,18 @@ jobs:
           npm install --no-save --legacy-peer-deps prisma@^6.19.0 @prisma/client@^6.19.0
 
       - name: Run Safe Migration via DIRECT_URL
+        if: env.DIRECT_URL != '' || env.DATABASE_URL != ''
         run: |
           bash scripts/db/migrate-deploy.sh
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Skip Migration When Secrets Unset
+        if: env.DIRECT_URL == '' && env.DATABASE_URL == ''
+        run: |
+          echo "NOTICE: Neither DIRECT_URL nor DATABASE_URL secret is set in GitHub Repository Secrets."
+          echo "Please add DIRECT_URL in Settings > Secrets and variables > Actions to enable automated migrations."
         env:
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
