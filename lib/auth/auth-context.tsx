@@ -145,6 +145,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
+      const rbacRole =
+        role === "acm_core" ? "ADMIN" : role === "acm_executive" ? "ORGANIZER" : "STUDENT";
+      const jsonStr = JSON.stringify({
+        id: nextUser.id,
+        name: nextUser.name,
+        email: nextUser.email,
+        role: rbacRole,
+        isActive: true,
+      });
+      const payload = btoa(
+        encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (_, p1) =>
+          String.fromCharCode(parseInt(p1, 16))
+        )
+      );
+      const cookieVal = `demo.${payload}.sig`;
+      document.cookie = `next-auth.session-token=${cookieVal}; path=/; max-age=86400; SameSite=Lax`;
+      if (typeof window !== "undefined" && window.location.protocol === "https:") {
+        document.cookie = `__Secure-next-auth.session-token=${cookieVal}; path=/; max-age=86400; SameSite=Lax; Secure`;
+      }
     } catch {
       // ignore
     }
@@ -154,6 +173,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     try {
       localStorage.removeItem(STORAGE_KEY);
+      document.cookie =
+        "next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+      document.cookie =
+        "__Secure-next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure";
     } catch {
       // ignore
     }

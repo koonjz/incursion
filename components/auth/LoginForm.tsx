@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/shared/Logo";
 
 import { useAuth, UserRole } from "@/lib/auth/auth-context";
+import { signIn } from "next-auth/react";
 
 export function LoginForm() {
   const router = useRouter();
@@ -29,6 +30,17 @@ export function LoginForm() {
       setEmail("priya.patel@robotics.campus.edu");
     } else {
       setEmail("aarav.sharma@campus.edu");
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      await signIn("google", { callbackUrl: "/dashboard" });
+    } catch {
+      setError("Unable to initiate Google sign in.");
+      setLoading(false);
     }
   };
 
@@ -55,14 +67,23 @@ export function LoginForm() {
     }
 
     const name =
-      role === "acm_core"
+      email.trim() && !email.includes("@campus.edu")
+        ? email.split("@")[0]
+        : role === "acm_core"
         ? "Rohan Varma"
         : role === "other_club_core"
         ? "Priya Patel"
         : "Aarav Sharma";
 
     login(role, email, name);
-    setTimeout(() => router.push("/dashboard"), 500);
+    const destination =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("callbackUrl") || "/dashboard"
+        : "/dashboard";
+
+    setTimeout(() => {
+      window.location.href = destination;
+    }, 100);
   };
 
   return (
@@ -101,7 +122,43 @@ export function LoginForm() {
           <h2 className="font-display text-3xl font-medium text-ink">Sign in</h2>
           <p className="mt-1.5 text-sm text-muted">Use your campus email address.</p>
 
-          <div className="mt-5 grid grid-cols-3 gap-1.5 rounded-xl bg-white/[0.04] p-1 border border-white/8">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="mt-5 w-full flex items-center justify-center gap-3 border-white/10 bg-white/[0.04] text-ink hover:bg-white/[0.08]"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+          >
+            <svg className="size-4 shrink-0" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.02h3.87c2.26-2.09 3.67-5.17 3.67-9.12z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.02c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.37 24 12 24z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.27 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.64H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.36l3.98-3.09z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.37 0 3.26 2.7 1.29 6.64l3.98 3.09c.95-2.85 3.6-4.98 6.73-4.98z"
+              />
+            </svg>
+            Continue with Google
+          </Button>
+
+          <div className="relative my-4 flex items-center justify-center">
+            <div className="w-full border-t border-white/10" />
+            <span className="relative rounded bg-slate-900/90 px-2 text-[11px] font-medium uppercase tracking-wider text-muted">
+              or use campus roles
+            </span>
+          </div>
+
+          <div className="mt-2 grid grid-cols-3 gap-1.5 rounded-xl bg-white/[0.04] p-1 border border-white/8">
             <button
               type="button"
               onClick={() => handleRoleSelect("acm_core")}
