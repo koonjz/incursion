@@ -68,7 +68,7 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: user.name,
             role: user.role,
-            isActive: activeStatus !== false,
+            isActive: Boolean(activeStatus ?? true),
           };
         } catch (err: unknown) {
           if (err instanceof Error && err.message === "ACCOUNT_DEACTIVATED") {
