@@ -4,6 +4,7 @@
 #
 # Enforces safe execution of `prisma migrate deploy` against direct unpooled
 # database endpoints (DIRECT_URL). Refuses execution if a pooled URL is used.
+# Clears stale advisory locks and includes retry mechanisms.
 # ==============================================================================
 
 set -euo pipefail
@@ -34,7 +35,6 @@ if [[ "$TARGET_URL" == *"-pooler"* ]]; then
 fi
 
 # 3. Extract and sanitize host name for secure logging (never log credentials)
-# Matches text between '@' and next ':' or '/'
 SAFE_HOST=$(echo "$TARGET_URL" | sed -E 's|.*@([^:/]+).*|\1|')
 
 if [ -z "$SAFE_HOST" ] || [ "$SAFE_HOST" = "$TARGET_URL" ]; then
@@ -42,10 +42,32 @@ if [ -z "$SAFE_HOST" ] || [ "$SAFE_HOST" = "$TARGET_URL" ]; then
 fi
 
 echo "Connecting to target database host: $SAFE_HOST"
-echo "Executing: npx prisma migrate deploy..."
 
-# 4. Run migration with DIRECT_URL set as DATABASE_URL for Prisma runtime
-DATABASE_URL="$TARGET_URL" DIRECT_URL="$TARGET_URL" npx prisma migrate deploy
+# 4. Clear any stale advisory locks before attempting migration
+echo "Checking and clearing any stale PostgreSQL advisory locks..."
+DATABASE_URL="$TARGET_URL" DIRECT_URL="$TARGET_URL" node scripts/db/clear-advisory-lock.js || true
+
+# 5. Run migration with retry logic
+MAX_RETRIES=3
+RETRY_DELAY=5
+SUCCESS=0
+
+for i in $(seq 1 $MAX_RETRIES); do
+  echo "Attempt $i of $MAX_RETRIES: Executing npx prisma migrate deploy..."
+  if DATABASE_URL="$TARGET_URL" DIRECT_URL="$TARGET_URL" npx prisma migrate deploy; then
+    SUCCESS=1
+    break
+  else
+    echo "WARNING: Migration attempt $i failed. Releasing advisory locks and retrying in ${RETRY_DELAY}s..."
+    DATABASE_URL="$TARGET_URL" DIRECT_URL="$TARGET_URL" node scripts/db/clear-advisory-lock.js || true
+    sleep $RETRY_DELAY
+  fi
+done
+
+if [ $SUCCESS -ne 1 ]; then
+  echo "ERROR: prisma migrate deploy failed after $MAX_RETRIES attempts."
+  exit 1
+fi
 
 echo "================================================================="
 echo " Prisma migration successfully applied to $SAFE_HOST"
