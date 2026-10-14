@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
-import nodemailer from "nodemailer";
 
 export async function POST(req: NextRequest) {
   try {
@@ -109,25 +108,34 @@ export async function POST(req: NextRequest) {
 
     if (smtpUser && smtpPass) {
       try {
-        const transporter = nodemailer.createTransport({
-          host: smtpHost,
-          port: smtpPort,
-          secure: smtpPort === 465,
-          auth: {
-            user: smtpUser,
-            pass: smtpPass,
-          },
-        });
+        let nodemailerModule: any = null;
+        try {
+          nodemailerModule = require("nodemailer");
+        } catch {
+          // nodemailer not installed
+        }
 
-        await transporter.sendMail({
-          from: process.env.EMAIL_FROM || `"ACM Resolve" <${smtpUser}>`,
-          to: cleanEmail,
-          subject: emailSubject,
-          html,
-        });
+        if (nodemailerModule) {
+          const transporter = nodemailerModule.createTransport({
+            host: smtpHost,
+            port: smtpPort,
+            secure: smtpPort === 465,
+            auth: {
+              user: smtpUser,
+              pass: smtpPass,
+            },
+          });
 
-        emailSent = true;
-        console.log(`[send-code] Email sent successfully via SMTP to ${cleanEmail}`);
+          await transporter.sendMail({
+            from: process.env.EMAIL_FROM || `"ACM Resolve" <${smtpUser}>`,
+            to: cleanEmail,
+            subject: emailSubject,
+            html,
+          });
+
+          emailSent = true;
+          console.log(`[send-code] Email sent successfully via SMTP to ${cleanEmail}`);
+        }
       } catch (smtpErr) {
         console.warn("[send-code] SMTP send failed, falling back to Resend:", smtpErr);
       }
