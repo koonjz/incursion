@@ -113,12 +113,24 @@ export function Sidebar({ onNavClick, className, bare = false }: SidebarProps) {
 
       <div className="space-y-2">
         <div className="glass-inset flex items-center gap-3 rounded-2xl p-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-navy-900 text-sm font-semibold text-white">
-            {initials(user?.name || "Campus User")}
-          </span>
+          {user?.avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.avatar}
+              alt={user.name}
+              className="size-10 shrink-0 rounded-xl object-cover ring-1 ring-white/10"
+            />
+          ) : (
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-navy-900 text-sm font-semibold text-white">
+              {initials(user?.name || "Campus User")}
+            </span>
+          )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-ink">{user?.name || "Campus User"}</p>
             <p className="truncate text-xs text-muted">{user?.roleLabel || "Campus Member"}</p>
+            {user?.department && (
+              <p className="truncate text-[11px] text-blue-300/80 font-normal">{user.department}</p>
+            )}
           </div>
         </div>
         <Link

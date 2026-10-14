@@ -86,6 +86,12 @@ export function LoginForm() {
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
+  const roleLabels: Record<UserRole, string> = {
+    acm_core: "ACM Core",
+    acm_executive: "ACM Executive",
+    other_club_core: "Other Club Core",
+  };
+
   const handleRoleSelect = (role: UserRole) => {
     setSelectedRole(role);
   };
@@ -94,6 +100,19 @@ export function LoginForm() {
     try {
       setLoading(true);
       setError(null);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("acm_pending_role", selectedRole);
+        if (department.trim()) {
+          localStorage.setItem("acm_pending_dept", department.trim());
+        } else {
+          localStorage.removeItem("acm_pending_dept");
+        }
+        if (fullName.trim()) {
+          localStorage.setItem("acm_pending_name", fullName.trim());
+        } else {
+          localStorage.removeItem("acm_pending_name");
+        }
+      }
       await signIn("google", { callbackUrl: "/dashboard" });
     } catch {
       setError("Unable to initiate Google sign in.");
@@ -288,40 +307,121 @@ export function LoginForm() {
           {step === "input" ? (
             <>
               <h2 className="font-display text-3xl font-medium text-ink">Sign in</h2>
-              <p className="mt-1.5 text-sm text-muted">
-                {authMode === "email_code"
-                  ? "We'll send a secure sign-in verification code to your email."
-                  : "Enter your campus details to access your dashboard."}
+              <p className="mt-1 text-sm text-muted">
+                Select your campus role and continue with Google or email.
               </p>
 
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="mt-5 w-full flex items-center justify-center gap-3 border-white/10 bg-white/[0.04] text-ink hover:bg-white/[0.08]"
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-              >
-                <svg className="size-4 shrink-0" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.02h3.87c2.26-2.09 3.67-5.17 3.67-9.12z"
+              {/* Step 1: Select Campus Profile details */}
+              <div className="mt-5 space-y-3.5 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Label className="block text-xs font-semibold uppercase tracking-wider text-blue-300">
+                      1. Select Your Campus Role
+                    </Label>
+                    <span className="text-[11px] text-muted font-medium">Required</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5 rounded-xl bg-white/[0.04] p-1 border border-white/8">
+                    <button
+                      type="button"
+                      onClick={() => handleRoleSelect("acm_core")}
+                      className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
+                        selectedRole === "acm_core"
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "text-muted hover:text-ink"
+                      }`}
+                    >
+                      ACM Core
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRoleSelect("acm_executive")}
+                      className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
+                        selectedRole === "acm_executive"
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "text-muted hover:text-ink"
+                      }`}
+                    >
+                      ACM Executive
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRoleSelect("other_club_core")}
+                      className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
+                        selectedRole === "other_club_core"
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "text-muted hover:text-ink"
+                      }`}
+                    >
+                      Other Clubs Core
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="department" className="text-xs">Department / Club</Label>
+                    <span className="text-[10px] text-muted">Optional</span>
+                  </div>
+                  <Input
+                    id="department"
+                    type="text"
+                    placeholder="e.g. Computer Science, Robotics, ACM Chapter..."
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    disabled={loading}
+                    className="mt-1 h-9 text-xs"
                   />
-                  <path
-                    fill="#34A853"
-                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.02c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.37 24 12 24z"
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="fullName" className="text-xs">Full Name</Label>
+                    <span className="text-[10px] text-muted">Auto-detected from Google if empty</span>
+                  </div>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="e.g. Alex Morgan"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    disabled={loading}
+                    className="mt-1 h-9 text-xs"
                   />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.27 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.64H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.36l3.98-3.09z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.37 0 3.26 2.7 1.29 6.64l3.98 3.09c.95-2.85 3.6-4.98 6.73-4.98z"
-                  />
-                </svg>
-                Continue with Google
-              </Button>
+                </div>
+              </div>
+
+              {/* Step 2: Google Sign-in */}
+              <div className="mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  className="w-full flex items-center justify-center gap-3 border-white/10 bg-white/[0.04] text-ink hover:bg-white/[0.08]"
+                  onClick={handleGoogleSignIn}
+                  disabled={loading}
+                >
+                  <svg className="size-4 shrink-0" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.02h3.87c2.26-2.09 3.67-5.17 3.67-9.12z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.02c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.37 24 12 24z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.27 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.64H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.36l3.98-3.09z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.37 0 3.26 2.7 1.29 6.64l3.98 3.09c.95-2.85 3.6-4.98 6.73-4.98z"
+                    />
+                  </svg>
+                  Continue with Google ({roleLabels[selectedRole]})
+                </Button>
+              </div>
 
               <div className="relative my-4 flex items-center justify-center">
                 <div className="w-full border-t border-white/10" />
@@ -365,22 +465,8 @@ export function LoginForm() {
               <form
                 onSubmit={authMode === "email_code" ? handleSendCode : handlePasswordSignIn}
                 noValidate
-                className="space-y-4"
+                className="space-y-3.5"
               >
-                <div>
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    autoComplete="name"
-                    placeholder="e.g. Alex Morgan"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    disabled={loading}
-                    className="mt-1"
-                  />
-                </div>
-
                 <div>
                   <Label htmlFor="email">Email address</Label>
                   <Input
@@ -391,63 +477,6 @@ export function LoginForm() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     aria-invalid={!!error && !email.trim()}
-                    disabled={loading}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label className="block text-xs font-medium uppercase tracking-wider text-muted">
-                    Select Campus Role
-                  </Label>
-                  <div className="mt-1.5 grid grid-cols-3 gap-1.5 rounded-xl bg-white/[0.04] p-1 border border-white/8">
-                    <button
-                      type="button"
-                      onClick={() => handleRoleSelect("acm_core")}
-                      className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
-                        selectedRole === "acm_core"
-                          ? "bg-blue-600 text-white shadow-sm"
-                          : "text-muted hover:text-ink"
-                      }`}
-                    >
-                      ACM Core
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRoleSelect("acm_executive")}
-                      className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
-                        selectedRole === "acm_executive"
-                          ? "bg-blue-600 text-white shadow-sm"
-                          : "text-muted hover:text-ink"
-                      }`}
-                    >
-                      ACM Executive
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRoleSelect("other_club_core")}
-                      className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
-                        selectedRole === "other_club_core"
-                          ? "bg-blue-600 text-white shadow-sm"
-                          : "text-muted hover:text-ink"
-                      }`}
-                    >
-                      Other Clubs Core
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="department">Department / Club</Label>
-                    <span className="text-[11px] text-muted">Optional</span>
-                  </div>
-                  <Input
-                    id="department"
-                    type="text"
-                    placeholder="e.g. Computer Science, ACM Chapter, Robotics..."
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
                     disabled={loading}
                     className="mt-1"
                   />

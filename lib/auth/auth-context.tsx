@@ -11,6 +11,7 @@ export interface AuthUser {
   role: UserRole;
   roleLabel: string;
   department?: string;
+  avatar?: string;
 }
 
 export const DEFAULT_USER: AuthUser = {
@@ -47,9 +48,9 @@ interface AuthContextType {
   canSeeConflicts: boolean;
   canAccessReviews: boolean;
   canAccessSubmissions: boolean;
-  login: (role?: UserRole, email?: string, name?: string, department?: string) => void;
+  login: (role?: UserRole, email?: string, name?: string, department?: string, avatar?: string) => void;
   logout: () => void;
-  switchRole: (role: UserRole) => void;
+  switchRole: (role: UserRole, department?: string) => void;
 }
 
 const STORAGE_KEY = "acm_resolve_auth_user";
@@ -122,7 +123,81 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const user = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const login = (role: UserRole = "acm_core", email?: string, name?: string, department?: string) => {
+  React.useEffect(() => {
+    // Sync with server session (e.g. from Google OAuth callback)
+    fetch("/api/auth/profile")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user?.email) {
+          const u = data.user;
+          const pendingRole = (localStorage.getItem("acm_pending_role") as UserRole) || null;
+          const pendingDept = localStorage.getItem("acm_pending_dept") || undefined;
+          const pendingName = localStorage.getItem("acm_pending_name") || undefined;
+
+          let role: UserRole = "acm_core";
+          if (pendingRole) {
+            role = pendingRole;
+          } else if (u.role === "ADMIN") {
+            role = "acm_core";
+          } else if (u.role === "ORGANIZER") {
+            role = "acm_executive";
+          } else if (u.role === "STUDENT") {
+            role = "other_club_core";
+          } else if (
+            u.role === "acm_core" ||
+            u.role === "acm_executive" ||
+            u.role === "other_club_core"
+          ) {
+            role = u.role;
+          }
+
+          const currentRaw = localStorage.getItem(STORAGE_KEY);
+          let currentParsed: AuthUser | null = null;
+          try {
+            currentParsed = currentRaw ? JSON.parse(currentRaw) : null;
+          } catch {}
+
+          const targetName =
+            pendingName && pendingName.trim()
+              ? pendingName.trim()
+              : u.name && u.name !== "Campus User"
+              ? u.name
+              : currentParsed?.name && currentParsed.name !== "Campus User"
+              ? currentParsed.name
+              : u.email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+
+          const targetDept = pendingDept || u.department || currentParsed?.department || "";
+          const targetAvatar = u.avatar || currentParsed?.avatar;
+
+          login(role, u.email, targetName, targetDept, targetAvatar);
+
+          if (pendingRole || pendingDept || pendingName || (u.name && u.name === "Campus User")) {
+            fetch("/api/auth/profile", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: targetName,
+                email: u.email,
+                role: role,
+                department: targetDept || undefined,
+              }),
+            }).catch(() => {});
+            localStorage.removeItem("acm_pending_role");
+            localStorage.removeItem("acm_pending_dept");
+            localStorage.removeItem("acm_pending_name");
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const login = (
+    role: UserRole = "acm_core",
+    email?: string,
+    name?: string,
+    department?: string,
+    avatar?: string
+  ) => {
     const roleLabels: Record<UserRole, string> = {
       acm_core: "ACM Core reviewer",
       acm_executive: "ACM Executive",
@@ -132,7 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const cleanEmail = (email || "").trim().toLowerCase();
     const cleanName =
       (name || "").trim() ||
-      (cleanEmail
+      (cleanEmail && cleanEmail !== "user@campus.edu"
         ? cleanEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
         : "Campus User");
 
@@ -143,6 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: role,
       roleLabel: roleLabels[role] || "Member",
       department: department?.trim() || undefined,
+      avatar: avatar || undefined,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
@@ -174,6 +250,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("acm_pending_role");
+      localStorage.removeItem("acm_pending_dept");
+      localStorage.removeItem("acm_pending_name");
       document.cookie =
         "next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
       document.cookie =
@@ -184,8 +263,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     notify();
   };
 
-  const switchRole = (role: UserRole) => {
-    login(role);
+  const switchRole = (role: UserRole, department?: string) => {
+    const dept = department !== undefined ? department : user.department;
+    login(role, user.email, user.name, dept, user.avatar);
+    if (user.email && user.email !== "user@campus.edu") {
+      fetch("/api/auth/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: user.name,
+          email: user.email,
+          role: role,
+          department: dept || undefined,
+        }),
+      }).catch(() => {});
+    }
   };
 
   const isAcmCore = user.role === "acm_core";
