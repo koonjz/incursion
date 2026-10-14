@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ExpenseCategory, ExpenseClaim } from "@/lib/types/expenses";
+import { useAuth } from "@/lib/auth/auth-context";
+import { initials } from "@/lib/utils";
 
 interface AddExpenseClaimModalProps {
   open: boolean;
@@ -23,6 +25,7 @@ export function AddExpenseClaimModal({
   onOpenChange,
   onAddClaim,
 }: AddExpenseClaimModalProps) {
+  const { user } = useAuth();
   const [event, setEvent] = useState("ACM Hackathon 2026");
   const [category, setCategory] = useState<ExpenseCategory>("Food & Catering");
   const [amount, setAmount] = useState("");
@@ -53,8 +56,8 @@ export function AddExpenseClaimModal({
       receiptName: receiptFile,
       merchant: merchant.trim() || "Campus Vendor LLC",
       addedBy: {
-        name: "Rohan Varma",
-        initials: "RV",
+        name: user?.name || "Campus User",
+        initials: initials(user?.name || "Campus User") || "CU",
       },
       status: "approved",
       gstin: "27AABCT3518Q1ZV",

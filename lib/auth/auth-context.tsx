@@ -10,34 +10,34 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   roleLabel: string;
+  department?: string;
 }
 
-export const ACM_CORE_USER: AuthUser = {
-  id: "usr_rohan",
-  name: "Rohan Varma",
-  email: "rohan.varma@campus.edu",
+export const DEFAULT_USER: AuthUser = {
+  id: "usr_guest",
+  name: "Campus User",
+  email: "user@campus.edu",
   role: "acm_core",
   roleLabel: "ACM Core reviewer",
 };
 
-export const ACM_EXECUTIVE_USER: AuthUser = {
-  id: "usr_aarav",
-  name: "Aarav Sharma",
-  email: "aarav.sharma@campus.edu",
-  role: "acm_executive",
+/** Backwards-compatibility alias for previous imports */
+export const CLUB_LEAD_USER = DEFAULT_USER;
+export const ACM_CORE_USER = DEFAULT_USER;
+export const ACM_EXECUTIVE_USER = {
+  id: "usr_lead",
+  name: "Campus Executive",
+  email: "executive@campus.edu",
+  role: "acm_executive" as UserRole,
   roleLabel: "ACM Executive",
 };
-
-export const OTHER_CLUB_CORE_USER: AuthUser = {
-  id: "usr_priya",
-  name: "Priya Patel",
-  email: "priya.patel@robotics.campus.edu",
-  role: "other_club_core",
+export const OTHER_CLUB_CORE_USER = {
+  id: "usr_member",
+  name: "Club Member",
+  email: "member@campus.edu",
+  role: "other_club_core" as UserRole,
   roleLabel: "Other Club Core Member",
 };
-
-/** Backwards-compatibility alias for previous imports */
-export const CLUB_LEAD_USER = ACM_EXECUTIVE_USER;
 
 interface AuthContextType {
   user: AuthUser;
@@ -47,7 +47,7 @@ interface AuthContextType {
   canSeeConflicts: boolean;
   canAccessReviews: boolean;
   canAccessSubmissions: boolean;
-  login: (role?: UserRole, email?: string, name?: string) => void;
+  login: (role?: UserRole, email?: string, name?: string, department?: string) => void;
   logout: () => void;
   switchRole: (role: UserRole) => void;
 }
@@ -69,11 +69,11 @@ function notify() {
 }
 
 let cachedRaw: string | null = null;
-let cachedUser: AuthUser = ACM_CORE_USER;
+let cachedUser: AuthUser = DEFAULT_USER;
 
 function getSnapshot(): AuthUser {
   if (typeof window === "undefined") {
-    return ACM_CORE_USER;
+    return DEFAULT_USER;
   }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -94,20 +94,20 @@ function getSnapshot(): AuthUser {
           }
         }
       }
-      cachedUser = ACM_CORE_USER;
+      cachedUser = DEFAULT_USER;
     }
     return cachedUser;
   } catch {
-    return ACM_CORE_USER;
+    return DEFAULT_USER;
   }
 }
 
 function getServerSnapshot(): AuthUser {
-  return ACM_CORE_USER;
+  return DEFAULT_USER;
 }
 
 const AuthContext = createContext<AuthContextType>({
-  user: ACM_CORE_USER,
+  user: DEFAULT_USER,
   isAcmCore: true,
   isAcmExecutive: false,
   isOtherClubCore: false,
@@ -122,27 +122,28 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const user = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const login = (role: UserRole = "acm_core", email?: string, name?: string) => {
-    let nextUser: AuthUser;
-    if (role === "acm_core") {
-      nextUser = {
-        ...ACM_CORE_USER,
-        email: email || ACM_CORE_USER.email,
-        name: name || ACM_CORE_USER.name,
-      };
-    } else if (role === "other_club_core") {
-      nextUser = {
-        ...OTHER_CLUB_CORE_USER,
-        email: email || OTHER_CLUB_CORE_USER.email,
-        name: name || OTHER_CLUB_CORE_USER.name,
-      };
-    } else {
-      nextUser = {
-        ...ACM_EXECUTIVE_USER,
-        email: email || ACM_EXECUTIVE_USER.email,
-        name: name || ACM_EXECUTIVE_USER.name,
-      };
-    }
+  const login = (role: UserRole = "acm_core", email?: string, name?: string, department?: string) => {
+    const roleLabels: Record<UserRole, string> = {
+      acm_core: "ACM Core reviewer",
+      acm_executive: "ACM Executive",
+      other_club_core: "Club Core Member",
+    };
+
+    const cleanEmail = (email || "").trim().toLowerCase();
+    const cleanName =
+      (name || "").trim() ||
+      (cleanEmail
+        ? cleanEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+        : "Campus User");
+
+    const nextUser: AuthUser = {
+      id: `usr_${cleanEmail.replace(/[^a-z0-9]/g, "_") || "user"}`,
+      email: cleanEmail || "user@campus.edu",
+      name: cleanName,
+      role: role,
+      roleLabel: roleLabels[role] || "Member",
+      department: department?.trim() || undefined,
+    };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
       const rbacRole =

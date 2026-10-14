@@ -15,22 +15,40 @@ import { signIn } from "next-auth/react";
 export function LoginForm() {
   const router = useRouter();
   const { login } = useAuth();
+  const [fullName, setFullName] = useState("");
   const [selectedRole, setSelectedRole] = useState<UserRole>("acm_core");
-  const [email, setEmail] = useState("rohan.varma@campus.edu");
-  const [password, setPassword] = useState("••••••••••••");
+  const [email, setEmail] = useState("");
+  const [department, setDepartment] = useState("");
+  const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem("acm_resolve_auth_user");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.name && parsed.name !== "Campus User" && parsed.name !== "Rohan Varma") {
+          setFullName(parsed.name);
+        }
+        if (parsed.email && parsed.email !== "user@campus.edu" && parsed.email !== "rohan.varma@campus.edu") {
+          setEmail(parsed.email);
+        }
+        if (parsed.department) {
+          setDepartment(parsed.department);
+        }
+        if (parsed.role) {
+          setSelectedRole(parsed.role);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const handleRoleSelect = (role: UserRole) => {
     setSelectedRole(role);
-    if (role === "acm_core") {
-      setEmail("rohan.varma@campus.edu");
-    } else if (role === "other_club_core") {
-      setEmail("priya.patel@robotics.campus.edu");
-    } else {
-      setEmail("aarav.sharma@campus.edu");
-    }
   };
 
   const handleGoogleSignIn = async () => {
@@ -44,7 +62,7 @@ export function LoginForm() {
     }
   };
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password) {
       setError("Enter your email and password to continue.");
@@ -57,25 +75,30 @@ export function LoginForm() {
     setError(null);
     setLoading(true);
 
-    let role: UserRole = selectedRole;
-    if (email.toLowerCase().includes("priya") || email.toLowerCase().includes("robotics") || selectedRole === "other_club_core") {
-      role = "other_club_core";
-    } else if (email.toLowerCase().includes("aarav") || email.toLowerCase().includes("executive") || selectedRole === "acm_executive") {
-      role = "acm_executive";
-    } else if (email.toLowerCase().includes("rohan") || email.toLowerCase().includes("core") || selectedRole === "acm_core") {
-      role = "acm_core";
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName =
+      fullName.trim() ||
+      cleanEmail
+        .split("@")[0]
+        .replace(/[._-]/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+
+    try {
+      await fetch("/api/auth/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: cleanName,
+          email: cleanEmail,
+          role: selectedRole,
+          department: department.trim() || undefined,
+        }),
+      });
+    } catch (err) {
+      console.warn("Could not save profile to database", err);
     }
 
-    const name =
-      email.trim() && !email.includes("@campus.edu")
-        ? email.split("@")[0]
-        : role === "acm_core"
-        ? "Rohan Varma"
-        : role === "other_club_core"
-        ? "Priya Patel"
-        : "Aarav Sharma";
-
-    login(role, email, name);
+    login(selectedRole, cleanEmail, cleanName, department.trim());
     const destination =
       typeof window !== "undefined"
         ? new URLSearchParams(window.location.search).get("callbackUrl") || "/dashboard"
@@ -120,7 +143,7 @@ export function LoginForm() {
 
         <div className="glass-strong mx-auto w-full max-w-md rounded-[var(--radius-hero)] p-7 sm:p-9">
           <h2 className="font-display text-3xl font-medium text-ink">Sign in</h2>
-          <p className="mt-1.5 text-sm text-muted">Use your campus email address.</p>
+          <p className="mt-1.5 text-sm text-muted">Enter your campus details to access your dashboard.</p>
 
           <Button
             type="button"
@@ -154,64 +177,98 @@ export function LoginForm() {
           <div className="relative my-4 flex items-center justify-center">
             <div className="w-full border-t border-white/10" />
             <span className="relative rounded bg-slate-900/90 px-2 text-[11px] font-medium uppercase tracking-wider text-muted">
-              or use campus roles
+              or enter account details
             </span>
           </div>
 
-          <div className="mt-2 grid grid-cols-3 gap-1.5 rounded-xl bg-white/[0.04] p-1 border border-white/8">
-            <button
-              type="button"
-              onClick={() => handleRoleSelect("acm_core")}
-              className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
-                selectedRole === "acm_core"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              ACM Core
-            </button>
-            <button
-              type="button"
-              onClick={() => handleRoleSelect("acm_executive")}
-              className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
-                selectedRole === "acm_executive"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              ACM Executive
-            </button>
-            <button
-              type="button"
-              onClick={() => handleRoleSelect("other_club_core")}
-              className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
-                selectedRole === "other_club_core"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              Other Clubs Core
-            </button>
-          </div>
-
-          <form onSubmit={onSubmit} noValidate className="mt-5 space-y-5">
+          <form onSubmit={onSubmit} noValidate className="mt-4 space-y-4">
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                id="fullName"
+                type="text"
+                autoComplete="name"
+                placeholder="e.g. Alex Morgan"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                disabled={loading}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="email">Email address</Label>
               <Input
                 id="email"
                 type="email"
                 autoComplete="email"
-                placeholder="you@campus.edu"
+                placeholder="you@campus.edu or name@domain.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 aria-invalid={!!error && !email.trim()}
                 disabled={loading}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label className="block text-xs font-medium uppercase tracking-wider text-muted">Select Campus Role</Label>
+              <div className="mt-1.5 grid grid-cols-3 gap-1.5 rounded-xl bg-white/[0.04] p-1 border border-white/8">
+                <button
+                  type="button"
+                  onClick={() => handleRoleSelect("acm_core")}
+                  className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
+                    selectedRole === "acm_core"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-muted hover:text-ink"
+                  }`}
+                >
+                  ACM Core
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRoleSelect("acm_executive")}
+                  className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
+                    selectedRole === "acm_executive"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-muted hover:text-ink"
+                  }`}
+                >
+                  ACM Executive
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRoleSelect("other_club_core")}
+                  className={`rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-all text-center ${
+                    selectedRole === "other_club_core"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-muted hover:text-ink"
+                  }`}
+                >
+                  Other Clubs Core
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="department">Department / Club</Label>
+                <span className="text-[11px] text-muted">Optional</span>
+              </div>
+              <Input
+                id="department"
+                type="text"
+                placeholder="e.g. Computer Science, ACM Chapter, Robotics..."
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                disabled={loading}
+                className="mt-1"
               />
             </div>
 
             <div>
               <Label htmlFor="password">Password</Label>
-              <div className="relative">
+              <div className="relative mt-1">
                 <Input
                   id="password"
                   type={show ? "text" : "password"}
@@ -240,7 +297,7 @@ export function LoginForm() {
               </p>
             )}
 
-            <Button type="submit" size="lg" className="w-full" disabled={loading}>
+            <Button type="submit" size="lg" className="w-full mt-2" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="animate-spin" /> Signing in
@@ -251,8 +308,8 @@ export function LoginForm() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-muted">
-            Demo mode: any email and password will open the dashboard.
+          <p className="mt-5 text-center text-xs text-muted">
+            Demo mode: any email and password will open the dashboard with your specified profile.
           </p>
         </div>
       </div>

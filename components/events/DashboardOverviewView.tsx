@@ -121,7 +121,7 @@ export function DashboardOverviewView({ initialEvents }: { initialEvents?: Campu
     return true;
   });
 
-  const firstName = user?.name ? user.name.split(" ")[0] : "Rohan";
+  const firstName = user?.name ? user.name.split(" ")[0] : "there";
 
   return (
     <div className="space-y-8">

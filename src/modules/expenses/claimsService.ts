@@ -219,8 +219,8 @@ export async function createNewClaim(data: {
     receiptName: data.receiptName || "CLAIM-RECEIPT.pdf",
     merchant: data.merchant || "Campus Vendor LLC",
     addedBy: {
-      name: data.userName || "Rohan Varma",
-      initials: (data.userName || "Rohan Varma")
+      name: data.userName || "Campus User",
+      initials: (data.userName || "Campus User")
         .split(" ")
         .map((n) => n[0])
         .join("")
@@ -254,7 +254,7 @@ export async function getClaimById(id: string) {
             .join("")
             .toUpperCase()
             .slice(0, 2)
-        : "RV";
+        : "CU";
 
       return {
         id: expense.id,
@@ -266,7 +266,7 @@ export async function getClaimById(id: string) {
         receiptName: expense.receipt?.fileName || "receipt.pdf",
         merchant: "Campus Vendor",
         addedBy: {
-          name: expense.createdBy?.name || "Rohan Varma",
+          name: expense.createdBy?.name || "Campus User",
           initials,
         },
         status: expense.status.toLowerCase() as "approved" | "pending" | "rejected",

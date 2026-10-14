@@ -31,7 +31,7 @@ const RESULT: Record<Decision, { title: string; text: string }> = {
 
 export function VerificationDetailWorkspace({ event, conflict }: { event: CampusEvent; conflict?: EventConflict | null }) {
   const router = useRouter();
-  const { isAcmCore } = useAuth();
+  const { isAcmCore, user } = useAuth();
   const [notes, setNotes] = useState("");
   const [changes, setChanges] = useState("");
   const [askingChanges, setAskingChanges] = useState(false);
@@ -204,7 +204,7 @@ export function VerificationDetailWorkspace({ event, conflict }: { event: Campus
           </div>
 
           <p className="flex items-center gap-2 text-xs text-muted">
-            <ShieldCheck className="size-4 shrink-0" /> Recorded under Rohan Varma, ACM Core.
+            <ShieldCheck className="size-4 shrink-0" /> Recorded under {user?.name || "Reviewer"}, {user?.roleLabel || "Reviewer"}.
           </p>
         </Card>
       </div>

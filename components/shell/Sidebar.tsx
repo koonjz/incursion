@@ -114,11 +114,11 @@ export function Sidebar({ onNavClick, className, bare = false }: SidebarProps) {
       <div className="space-y-2">
         <div className="glass-inset flex items-center gap-3 rounded-2xl p-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-navy-900 text-sm font-semibold text-white">
-            {initials(user?.name ?? "Rohan Varma")}
+            {initials(user?.name || "Campus User")}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-ink">{user?.name ?? "Rohan Varma"}</p>
-            <p className="truncate text-xs text-muted">{user?.roleLabel ?? "ACM Core reviewer"}</p>
+            <p className="truncate text-sm font-semibold text-ink">{user?.name || "Campus User"}</p>
+            <p className="truncate text-xs text-muted">{user?.roleLabel || "Campus Member"}</p>
           </div>
         </div>
         <Link
