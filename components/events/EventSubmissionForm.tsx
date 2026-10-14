@@ -49,7 +49,7 @@ export function EventSubmissionForm() {
       };
       const venueId = venueMap[form.values.venue] || "ven-lt2";
 
-      await fetch("/api/events", {
+      const res = await fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -65,11 +65,25 @@ export function EventSubmissionForm() {
           overrideReason: "User confirmed submission",
         }),
       });
-    } catch (err) {
-      console.warn("Event POST failed:", err);
-    }
 
-    setStatus("done");
+      const resData = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(resData?.message || resData?.error || "Failed to submit event to database.");
+      }
+
+      // Notify dashboard and other tabs that an event was newly created
+      try {
+        localStorage.setItem("acm_event_created", Date.now().toString());
+      } catch {}
+
+      router.refresh();
+      setStatus("done");
+    } catch (err: any) {
+      console.warn("Event POST failed:", err);
+      alert(err?.message || "Failed to submit event. Please verify your details and try again.");
+      setStatus("idle");
+    }
   };
 
   if (status === "done") {
@@ -97,15 +111,29 @@ export function EventSubmissionForm() {
           </p>
         )}
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
-          <Button variant="outline" onClick={() => router.push("/dashboard")}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              window.location.href = "/dashboard";
+            }}
+          >
             Go to Dashboard
           </Button>
           {canAccessSubmissions && (
-            <Button variant="outline" onClick={() => router.push("/events/my-submissions")}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                window.location.href = "/events/my-submissions";
+              }}
+            >
               My submissions
             </Button>
           )}
-          <Button onClick={() => router.push("/calendar")}>
+          <Button
+            onClick={() => {
+              window.location.href = "/calendar";
+            }}
+          >
             View calendar <ArrowRight />
           </Button>
         </div>

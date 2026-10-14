@@ -120,13 +120,16 @@ export function DashboardOverviewView({ initialEvents }: { initialEvents?: Campu
   const [activeTab, setActiveTab] = useState<MainTab>("upcoming");
   const [refreshing, setRefreshing] = useState(false);
 
-  // Client-side fetch to ensure fresh events from Neon DB
+  // Client-side fetch to ensure live fresh events from Neon DB
   const refreshEvents = useCallback(() => {
     setRefreshing(true);
-    fetch("/api/events/campus")
+    fetch(`/api/events/campus?_t=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+        if (data?.data && Array.isArray(data.data)) {
           setEvents(data.data);
         }
       })
@@ -134,12 +137,36 @@ export function DashboardOverviewView({ initialEvents }: { initialEvents?: Campu
       .finally(() => setRefreshing(false));
   }, []);
 
+  // Sync state if initialEvents prop updates from RSC
+  useEffect(() => {
+    if (initialEvents && Array.isArray(initialEvents) && initialEvents.length > 0) {
+      setEvents(initialEvents);
+    }
+  }, [initialEvents]);
+
+  // Live polling every 3 seconds + window focus + storage event triggers
   useEffect(() => {
     refreshEvents();
 
+    const timer = setInterval(() => {
+      refreshEvents();
+    }, 3000);
+
     const onFocus = () => refreshEvents();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "acm_event_created") {
+        refreshEvents();
+      }
+    };
+
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("storage", onStorage);
+    };
   }, [refreshEvents]);
 
   // User's own submissions
@@ -150,9 +177,14 @@ export function DashboardOverviewView({ initialEvents }: { initialEvents?: Campu
     return events
       .filter((e) => {
         if (!userEmail && !userName) return false;
-        const matchesEmail = e.submitterEmail && e.submitterEmail.toLowerCase().trim() === userEmail;
-        const matchesName = e.submitterName && e.submitterName.toLowerCase().trim() === userName;
-        const matchesOrg = e.organizer && e.organizer.toLowerCase().trim() === userName;
+        const eEmail = (e.submitterEmail || "").toLowerCase().trim();
+        const eName = (e.submitterName || "").toLowerCase().trim();
+        const eOrg = (e.organizer || "").toLowerCase().trim();
+
+        const matchesEmail = Boolean(userEmail && eEmail && (eEmail === userEmail || eEmail.includes(userEmail) || userEmail.includes(eEmail)));
+        const matchesName = Boolean(userName && eName && (eName === userName || eName.includes(userName) || userName.includes(eName)));
+        const matchesOrg = Boolean(userName && eOrg && (eOrg === userName || eOrg.includes(userName) || userName.includes(eOrg)));
+
         return matchesEmail || matchesName || matchesOrg;
       })
       .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
@@ -371,6 +403,20 @@ export function DashboardOverviewView({ initialEvents }: { initialEvents?: Campu
                 >
                   In Review ({pendingQueue.length})
                 </button>
+                {mySubmissions.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("my_submissions")}
+                    className={cn(
+                      "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
+                      activeTab === "my_submissions"
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "text-muted hover:text-ink"
+                    )}
+                  >
+                    My Submissions ({mySubmissions.length})
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setActiveTab("all")}
@@ -389,6 +435,38 @@ export function DashboardOverviewView({ initialEvents }: { initialEvents?: Campu
                 <Link href="/calendar">Open full calendar</Link>
               </Button>
             </div>
+
+            {/* Tab: My Submissions */}
+            {activeTab === "my_submissions" && (
+              <div className="pt-2">
+                {mySubmissions.length ? (
+                  <ul className="divide-y divide-white/5">
+                    {mySubmissions.map((e) => (
+                      <EventRow
+                        key={e.id}
+                        event={e}
+                        href={`/events/${e.id}`}
+                        action="Details"
+                        extra={
+                          e.conflictSeverity !== "none" ? (
+                            <SeverityBadge
+                              severity={e.conflictSeverity}
+                              className="hidden md:inline-flex"
+                            />
+                          ) : null
+                        }
+                      />
+                    ))}
+                  </ul>
+                ) : (
+                  <EmptyState
+                    icon={<Files />}
+                    title="No submissions yet"
+                    description="Events you submit will appear here."
+                  />
+                )}
+              </div>
+            )}
 
             {/* Tab 1: Upcoming Approved */}
             {activeTab === "upcoming" && (

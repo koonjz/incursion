@@ -35,7 +35,26 @@ export function MySubmissionsView({ initialEvents }: { initialEvents?: CampusEve
   const [tab, setTab] = useState<Tab>("all");
   const [query, setQuery] = useState("");
 
-  const eventList = initialEvents && initialEvents.length > 0 ? initialEvents : MOCK_EVENTS;
+  const [eventList, setEventList] = useState<CampusEvent[]>(
+    initialEvents && initialEvents.length > 0 ? initialEvents : MOCK_EVENTS
+  );
+
+  useEffect(() => {
+    if (initialEvents && initialEvents.length > 0) {
+      setEventList(initialEvents);
+    }
+  }, [initialEvents]);
+
+  useEffect(() => {
+    fetch(`/api/events/campus?_t=${Date.now()}`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.data && Array.isArray(data.data)) {
+          setEventList(data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (isOtherClubCore) {
