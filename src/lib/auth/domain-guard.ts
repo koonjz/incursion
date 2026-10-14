@@ -10,16 +10,25 @@ export function validateEmailDomain(email: string | null | undefined, allowedDom
 
   const domain = allowedDomain || process.env.ALLOWED_EMAIL_DOMAIN;
   if (!domain || domain === "*") {
-    return true; // Unrestricted domain in staging or local sandbox
+    return true; // Unrestricted domain
   }
 
   const parts = cleanEmail.split("@");
   if (parts.length !== 2) return false;
 
   const emailHost = parts[1];
-  const targetHost = domain.toLowerCase().trim();
+  const allowedHosts = domain
+    .split(",")
+    .map((d) => d.toLowerCase().trim())
+    .filter(Boolean);
 
-  return emailHost === targetHost || emailHost.endsWith(`.${targetHost}`);
+  if (allowedHosts.length === 0 || allowedHosts.includes("*")) {
+    return true;
+  }
+
+  return allowedHosts.some(
+    (targetHost) => emailHost === targetHost || emailHost.endsWith(`.${targetHost}`)
+  );
 }
 
 /**
