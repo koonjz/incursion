@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, name, role, department } = await req.json();
+    const { email, name, role, department, purpose = "login" } = await req.json();
 
     if (!email || typeof email !== "string" || !/^\S+@\S+\.\S+$/.test(email)) {
       return NextResponse.json(
@@ -44,7 +44,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const emailSubject = `${code} is your ACM Resolve verification code`;
+    const titleText =
+      purpose === "signup"
+        ? "Account Activation Code"
+        : purpose === "reset"
+        ? "Password Reset Code"
+        : "Sign-in Verification Code";
+
+    const emailSubject = `${code} is your ACM Resolve ${
+      purpose === "signup" ? "activation" : purpose === "reset" ? "password reset" : "verification"
+    } code`;
+
+    const introText =
+      purpose === "signup"
+        ? "Use the 6-digit code below to verify your email and activate your ACM Resolve account:"
+        : purpose === "reset"
+        ? "Use the 6-digit code below to securely reset your password:"
+        : "Use the 6-digit code below to securely sign in to your ACM Resolve account:";
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -65,13 +82,13 @@ export async function POST(req: NextRequest) {
       <body>
         <div class="card">
           <div class="logo">ACM <span>Resolve</span></div>
-          <h1>Sign-in Verification Code</h1>
+          <h1>${titleText}</h1>
           <p>Hello ${cleanName},</p>
-          <p>Use the 6-digit code below to securely sign in to your ACM Resolve account:</p>
+          <p>${introText}</p>
           <div class="code-box">
             <div class="code">${code}</div>
           </div>
-          <p style="font-size: 13px;">This code will expire in <strong>10 minutes</strong>. If you did not request this login code, you can safely disregard this email.</p>
+          <p style="font-size: 13px;">This code will expire in <strong>10 minutes</strong>. If you did not request this code, you can safely disregard this email.</p>
           <div class="footer">
             ACM Resolve &bull; Campus Event Scheduling & Verification Portal
           </div>

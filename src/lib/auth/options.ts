@@ -5,6 +5,7 @@ import { prisma } from "@/src/lib/prisma";
 import { APP_CONFIG } from "@/src/config";
 import { validateEmailDomain, determineInitialRole } from "./domain-guard";
 import type { UserRole } from "@/src/modules/auth/rbac";
+import { verifyPassword } from "./password";
 
 const isProductionHttps =
   process.env.NODE_ENV === "production" &&
@@ -67,6 +68,13 @@ export const authOptions: NextAuthOptions = {
           const activeStatus = (user as unknown as { isActive?: boolean }).isActive;
           if (activeStatus === false) {
             throw new Error("ACCOUNT_DEACTIVATED");
+          }
+
+          // If user has a passwordHash set, verify password
+          if (user.passwordHash) {
+            if (!credentials.password || !verifyPassword(credentials.password, user.passwordHash)) {
+              throw new Error("INVALID_PASSWORD");
+            }
           }
 
           return {
