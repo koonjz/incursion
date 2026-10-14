@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  AlertTriangle,
   ArrowLeft,
   CalendarCheck2,
   CheckCircle2,
@@ -48,6 +49,7 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
+  const [sandboxNotice, setSandboxNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
@@ -141,9 +143,8 @@ export function LoginForm() {
 
       setStep("verify");
       setSuccessMessage(data.message || `Verification code sent to ${cleanEmail}`);
-      if (data.devCode) {
-        setDevCode(data.devCode);
-      }
+      setDevCode(data.devCode || null);
+      setSandboxNotice(data.sandboxMessage || null);
       setResendCooldown(60);
     } catch (err: any) {
       setError(err?.message || "Failed to connect to authentication server.");
@@ -529,6 +530,20 @@ export function LoginForm() {
                 <div className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-3.5 py-2.5 text-xs text-emerald-300 flex items-center gap-2">
                   <CheckCircle2 className="size-4 shrink-0 text-emerald-400" />
                   <span>{successMessage}</span>
+                </div>
+              )}
+
+              {sandboxNotice && (
+                <div className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3.5 text-xs text-amber-200">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="size-4 shrink-0 text-amber-400 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-amber-300">Resend Sandbox Restriction</p>
+                      <p className="mt-1 text-amber-200/90 leading-relaxed">
+                        Free testing sender <code className="rounded bg-black/30 px-1 py-0.5 text-white">onboarding@resend.dev</code> only delivers to the Resend account owner (<span className="text-white font-medium">kunjp0039@gmail.com</span>). For other recipients, use the test code below or verify a custom domain at resend.com/domains.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 

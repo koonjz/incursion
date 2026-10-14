@@ -30,6 +30,7 @@
     "lucide-react": "^1.53.0",
     "next": "16.4.0",
     "next-auth": "^4.24.15",
+    "nodemailer": "^7.0.13",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "recharts": "^3.10.1",
@@ -39,6 +40,7 @@
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
