@@ -37,6 +37,17 @@ export function LandingCalendar({
     return map;
   }, [events]);
 
+  React.useEffect(() => {
+    if (events && events.length > 0 && (!selected || !byDate.has(selected))) {
+      const match = events[0]?.date;
+      if (match) {
+        setSelected(match);
+        const [y, m] = match.split("-").map(Number);
+        setView({ year: y, month: m - 1 });
+      }
+    }
+  }, [events, byDate, selected]);
+
   const { year, month } = view;
   const leading = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -130,7 +141,17 @@ export function LandingCalendar({
                 {day}
                 <span className="flex h-1.5 items-center gap-0.5" aria-hidden>
                   {list.slice(0, 3).map((e) => (
-                    <span key={e.id} className={cn("size-1.5 rounded-full", isSelected ? "bg-white" : "bg-blue-500")} />
+                    <span
+                      key={e.id}
+                      className={cn(
+                        "size-1.5 rounded-full",
+                        isSelected
+                          ? "bg-white"
+                          : e.status === "approved"
+                            ? "bg-blue-500"
+                            : "bg-amber-400"
+                      )}
+                    />
                   ))}
                 </span>
               </button>
@@ -159,8 +180,15 @@ export function LandingCalendar({
                     <span className="font-display text-xl leading-none">{p.day}</span>
                   </span>
                   <span className="min-w-0 space-y-1">
-                    <span className="block text-[15px] font-semibold leading-snug text-ink group-hover:text-blue-200">
-                      {e.title}
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="block text-[15px] font-semibold leading-snug text-ink group-hover:text-blue-200">
+                        {e.title}
+                      </span>
+                      {e.status !== "approved" && (
+                        <span className="inline-flex items-center rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-medium text-blue-300">
+                          {e.status === "pending" ? "In review" : e.status}
+                        </span>
+                      )}
                     </span>
                     <span className="flex items-center gap-1.5 text-sm text-muted">
                       <Clock className="size-3.5" />
@@ -178,7 +206,7 @@ export function LandingCalendar({
             <EmptyState
               icon={<CalendarDays />}
               title="Nothing scheduled"
-              description="No approved events on this day."
+              description="No events on this day."
               action={
                 nextEventDate ? (
                   <Button variant="soft" size="sm" onClick={() => jumpTo(nextEventDate)}>

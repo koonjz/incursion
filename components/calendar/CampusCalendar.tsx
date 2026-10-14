@@ -46,7 +46,54 @@ export function CampusCalendar({ initialEvents }: { initialEvents?: CampusEvent[
   const [status, setStatus] = useState("all");
   const [conflictOnly, setConflictOnly] = useState(false);
 
-  const eventList = initialEvents && initialEvents.length > 0 ? initialEvents : MOCK_EVENTS;
+  const [eventList, setEventList] = useState<CampusEvent[]>(
+    initialEvents && initialEvents.length > 0 ? initialEvents : MOCK_EVENTS
+  );
+
+  const refreshEvents = React.useCallback(() => {
+    fetch(`/api/events/campus?_t=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.data && Array.isArray(data.data)) {
+          setEventList(data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  React.useEffect(() => {
+    if (initialEvents && Array.isArray(initialEvents) && initialEvents.length > 0) {
+      setEventList(initialEvents);
+    }
+  }, [initialEvents]);
+
+  React.useEffect(() => {
+    refreshEvents();
+
+    const timer = setInterval(() => {
+      refreshEvents();
+    }, 3000);
+
+    const onFocus = () => refreshEvents();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "acm_event_created") {
+        refreshEvents();
+      }
+    };
+
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [refreshEvents]);
+
   const filtersActive = club !== "all" || type !== "all" || venue !== "all" || audience !== "all" || status !== "all" || conflictOnly;
 
   const filtered = useMemo(
@@ -86,7 +133,7 @@ export function CampusCalendar({ initialEvents }: { initialEvents?: CampusEvent[
   };
 
   const onEventClick = (id: string) => {
-    const original = MOCK_EVENTS.find((e) => e.id === id);
+    const original = eventList.find((e) => e.id === id);
     if (original) setSelected(original);
   };
 
@@ -104,7 +151,7 @@ export function CampusCalendar({ initialEvents }: { initialEvents?: CampusEvent[
       <Card className="space-y-4 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-muted">
-            Showing <span className="font-semibold text-ink">{filtered.length}</span> of {MOCK_EVENTS.length} events
+            Showing <span className="font-semibold text-ink">{filtered.length}</span> of {eventList.length} events
           </p>
           {filtersActive && (
             <Button variant="ghost" size="sm" onClick={reset}>

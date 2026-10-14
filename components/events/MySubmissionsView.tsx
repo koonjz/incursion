@@ -45,8 +45,11 @@ export function MySubmissionsView({ initialEvents }: { initialEvents?: CampusEve
     }
   }, [initialEvents]);
 
-  useEffect(() => {
-    fetch(`/api/events/campus?_t=${Date.now()}`, { cache: "no-store" })
+  const refreshEvents = React.useCallback(() => {
+    fetch(`/api/events/campus?_t=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.data && Array.isArray(data.data)) {
@@ -55,6 +58,30 @@ export function MySubmissionsView({ initialEvents }: { initialEvents?: CampusEve
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    refreshEvents();
+
+    const timer = setInterval(() => {
+      refreshEvents();
+    }, 3000);
+
+    const onFocus = () => refreshEvents();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "acm_event_created") {
+        refreshEvents();
+      }
+    };
+
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [refreshEvents]);
 
   useEffect(() => {
     if (isOtherClubCore) {

@@ -8,14 +8,17 @@ import { Process } from "@/components/landing/Process";
 import { Faq } from "@/components/landing/Faq";
 import { Cta } from "@/components/landing/Cta";
 import { SiteFooter } from "@/components/landing/SiteFooter";
-import { getPublicEvents } from "@/lib/events";
+import { getAllCampusEvents } from "@/lib/events";
 import { MOCK_CLUBS, MOCK_VENUES } from "@/lib/mock/events";
 
 import { prisma } from "@/src/lib/prisma";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function HomePage() {
   const [events, venuesCount, usersCount] = await Promise.all([
-    getPublicEvents(),
+    getAllCampusEvents(),
     prisma.venue.count().catch(() => 5),
     prisma.user.count().catch(() => 25),
   ]);

@@ -31,6 +31,51 @@ export function LandingExperience({
   children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState<CampusEvent | null>(null);
+  const [liveEvents, setLiveEvents] = useState<CampusEvent[]>(events || []);
+
+  const refreshEvents = React.useCallback(() => {
+    fetch(`/api/events/campus?_t=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.data && Array.isArray(data.data)) {
+          setLiveEvents(data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  React.useEffect(() => {
+    if (events && events.length > 0) {
+      setLiveEvents(events);
+    }
+  }, [events]);
+
+  React.useEffect(() => {
+    refreshEvents();
+
+    const timer = setInterval(() => {
+      refreshEvents();
+    }, 3000);
+
+    const onFocus = () => refreshEvents();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "acm_event_created") {
+        refreshEvents();
+      }
+    };
+
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [refreshEvents]);
 
   return (
     <>
@@ -84,9 +129,9 @@ export function LandingExperience({
               className="glass pointer-events-none absolute -right-2 bottom-24 z-30 hidden items-center gap-2 rounded-2xl px-3.5 py-2.5 text-sm text-ink xl:flex"
             >
               <span className="size-2 rounded-full bg-copper-400" />
-              {events.length} verified events
+              {liveEvents.length} campus events
             </div>
-            <EventCardStack events={events} onOpen={setOpen} />
+            <EventCardStack events={liveEvents} onOpen={setOpen} />
           </div>
         </div>
       </section>
@@ -97,9 +142,9 @@ export function LandingExperience({
         <SectionHead
           eyebrow="Calendar"
           title="Campus calendar"
-          text="Pick a day to see what is on. Only approved events appear here."
+          text="Pick a day to see what is on campus."
         />
-        <LandingCalendar events={events} onOpen={setOpen} />
+        <LandingCalendar events={liveEvents} onOpen={setOpen} />
       </section>
 
       {children}
