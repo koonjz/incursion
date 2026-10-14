@@ -35,6 +35,7 @@ jobs:
           npx --yes prisma@6 generate
         env:
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_db?schema=public"
+          DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/test_db?schema=public"
 
       - name: Run Linter
         run: npm run lint || npx eslint .
@@ -45,6 +46,7 @@ jobs:
         env:
           NODE_ENV: test
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_db?schema=public"
+          DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/test_db?schema=public"
 
       - name: Build Next.js Application
         run: npm run build
@@ -52,6 +54,7 @@ jobs:
           NODE_ENV: production
           NEXT_TELEMETRY_DISABLED: 1
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_db?schema=public"
+          DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/test_db?schema=public"
           NEXTAUTH_URL: "http://localhost:3000"
           NEXTAUTH_SECRET: "ci-build-placeholder-secret-at-least-32-chars"
 
@@ -96,6 +99,7 @@ jobs:
           npx --yes prisma@6 db push --skip-generate
         env:
           DATABASE_URL: "postgresql://test_user:test_password@localhost:5432/e2e_test_db?schema=public"
+          DIRECT_URL: "postgresql://test_user:test_password@localhost:5432/e2e_test_db?schema=public"
 
       - name: Run E2E Tests
         run: npx playwright test --config playwright.config.m1.ts
@@ -105,6 +109,7 @@ jobs:
           E2E_AUTH: "true"
           ALLOW_HEADER_AUTH: "true"
           DATABASE_URL: "postgresql://test_user:test_password@localhost:5432/e2e_test_db?schema=public"
+          DIRECT_URL: "postgresql://test_user:test_password@localhost:5432/e2e_test_db?schema=public"
           NEXTAUTH_URL: "http://localhost:3000"
           NEXTAUTH_SECRET: "ci-playwright-secret-at-least-32-chars"
 

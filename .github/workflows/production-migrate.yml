@@ -37,8 +37,8 @@ jobs:
         run: |
           bash scripts/db/migrate-deploy.sh
         env:
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL || secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL || secrets.DIRECT_URL }}
 
       - name: Skip Migration When Secrets Unset
         if: env.DIRECT_URL == '' && env.DATABASE_URL == ''

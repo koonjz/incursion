@@ -42,6 +42,9 @@ jobs:
 
       - name: Generate Prisma Client
         run: npx prisma generate
+        env:
+          DATABASE_URL: ${{ steps.create-neon-branch.outputs.db_url }}
+          DIRECT_URL: ${{ steps.create-neon-branch.outputs.db_url }}
 
       - name: Deploy Migrations to Neon Preview Branch
         run: |
@@ -50,6 +53,7 @@ jobs:
           DATABASE_URL="${{ steps.create-neon-branch.outputs.db_url }}" npx prisma migrate deploy
         env:
           DATABASE_URL: ${{ steps.create-neon-branch.outputs.db_url }}
+          DIRECT_URL: ${{ steps.create-neon-branch.outputs.db_url }}
 
       - name: Post Branch Details to Pull Request
         uses: actions/github-script@v7

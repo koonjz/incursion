@@ -45,7 +45,7 @@ echo "Connecting to target database host: $SAFE_HOST"
 echo "Executing: npx prisma migrate deploy..."
 
 # 4. Run migration with DIRECT_URL set as DATABASE_URL for Prisma runtime
-DATABASE_URL="$TARGET_URL" npx prisma migrate deploy
+DATABASE_URL="$TARGET_URL" DIRECT_URL="$TARGET_URL" npx prisma migrate deploy
 
 echo "================================================================="
 echo " Prisma migration successfully applied to $SAFE_HOST"
