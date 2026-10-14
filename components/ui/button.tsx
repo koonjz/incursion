@@ -9,15 +9,18 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-gradient-to-b from-blue-600 to-blue-600 text-white shadow-[0_8px_18px_-8px_rgba(37,99,235,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] hover:from-blue-500 hover:to-blue-700",
-        secondary: "bg-blue-400/15 text-blue-100 hover:bg-blue-400/25",
+          "bg-white text-zinc-950 font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.1),0_8px_20px_-6px_rgba(255,255,255,0.18)] hover:bg-zinc-100 border border-white/90 hover:scale-[1.01] active:scale-[0.98]",
+        primary:
+          "bg-white text-zinc-950 font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.1),0_8px_20px_-6px_rgba(255,255,255,0.18)] hover:bg-zinc-100 border border-white/90 hover:scale-[1.01] active:scale-[0.98]",
+        secondary:
+          "border border-white/12 bg-white/[0.07] text-zinc-100 hover:bg-white/[0.12] hover:border-white/25 shadow-sm active:scale-[0.98]",
         outline:
-          "border border-white/14 bg-white/[0.06] text-white shadow-sm hover:bg-white/10 hover:border-white/28",
-        ghost: "text-blue-100 hover:bg-white/8",
+          "border border-white/16 bg-white/[0.04] text-zinc-200 shadow-sm hover:bg-white/[0.09] hover:border-white/30 hover:text-white active:scale-[0.98]",
+        ghost: "text-zinc-300 hover:bg-white/[0.07] hover:text-white",
         destructive:
-          "bg-rose-600 text-white shadow-[0_8px_18px_-8px_rgba(190,18,60,0.55)] hover:bg-rose-500",
-        link: "h-auto p-0 text-blue-300 underline-offset-4 hover:underline",
-        soft: "border border-blue-400/25 bg-white/5 text-blue-300 hover:bg-blue-400/20",
+          "bg-rose-600 text-white shadow-[0_8px_18px_-8px_rgba(225,29,72,0.55)] hover:bg-rose-500 active:scale-[0.98]",
+        link: "h-auto p-0 text-blue-400 underline-offset-4 hover:underline hover:text-blue-300",
+        soft: "border border-blue-500/25 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 active:scale-[0.98]",
       },
       size: {
         default: "h-10 px-4",

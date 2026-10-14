@@ -118,19 +118,19 @@ export function LandingCalendar({
                 aria-label={`${formatLongDate(key)}${list.length ? `, ${list.length} ${list.length === 1 ? "event" : "events"}` : ""}`}
                 onClick={() => setSelected(key)}
                 className={cn(
-                  "relative flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl text-sm transition-[background-color,color,box-shadow] duration-200 sm:aspect-[5/4]",
+                  "relative flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl text-sm transition-all duration-200 sm:aspect-[5/4]",
                   isSelected
-                    ? "bg-blue-600 font-semibold text-white shadow-[0_8px_18px_-8px_rgba(37,99,235,0.5)]"
+                    ? "bg-white font-bold text-zinc-950 shadow-[0_4px_16px_rgba(255,255,255,0.25)]"
                     : list.length
-                      ? "bg-white/[0.06] font-medium text-ink hover:bg-white/10"
-                      : "text-body hover:bg-white/10",
-                  isToday && !isSelected && "ring-2 ring-blue-400/50"
+                      ? "bg-white/[0.07] font-semibold text-white hover:bg-white/[0.12] border border-blue-500/20"
+                      : "text-zinc-400 hover:bg-white/[0.05] hover:text-white",
+                  isToday && !isSelected && "ring-2 ring-blue-400"
                 )}
               >
                 {day}
                 <span className="flex h-1.5 items-center gap-0.5" aria-hidden>
                   {list.slice(0, 3).map((e) => (
-                    <span key={e.id} className={cn("size-1.5 rounded-full", isSelected ? "bg-white" : "bg-blue-500")} />
+                    <span key={e.id} className={cn("size-1.5 rounded-full", isSelected ? "bg-zinc-950" : "bg-blue-400")} />
                   ))}
                 </span>
               </button>
@@ -139,11 +139,18 @@ export function LandingCalendar({
         </div>
       </div>
 
-      <div className="glass flex flex-col rounded-[var(--radius-hero)] p-5 sm:p-7">
-        <p className="text-sm text-muted">Selected day</p>
-        <h3 className="font-display text-2xl font-medium text-ink">{formatLongDate(selected)}</h3>
+      <div className="glass flex flex-col rounded-[var(--radius-hero)] p-5 sm:p-7 border border-white/10 bg-[#0c101d]">
+        <div className="flex items-center justify-between border-b border-white/8 pb-3">
+          <div>
+            <p className="text-xs uppercase font-mono tracking-wider text-zinc-400">Selected Timetable</p>
+            <h3 className="font-display text-xl sm:text-2xl font-bold text-white mt-0.5">{formatLongDate(selected)}</h3>
+          </div>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/25">
+            {dayEvents.length} {dayEvents.length === 1 ? "Booking" : "Bookings"}
+          </span>
+        </div>
 
-        <div className="mt-5 flex-1 space-y-3" aria-live="polite">
+        <div className="mt-4 flex-1 space-y-3" aria-live="polite">
           {dayEvents.length > 0 ? (
             dayEvents.map((e) => {
               const p = eventDateParts(e.date);
@@ -152,23 +159,23 @@ export function LandingCalendar({
                   key={e.id}
                   type="button"
                   onClick={() => onOpen(e)}
-                  className="group flex w-full cursor-pointer items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.06] p-4 text-left transition-[background-color,border-color,box-shadow] duration-200 hover:border-blue-400/40 hover:bg-white/10 hover:shadow-md"
+                  className="group flex w-full cursor-pointer items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition-all duration-200 hover:border-blue-400/50 hover:bg-white/[0.08] hover:shadow-lg"
                 >
-                  <span className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-blue-600 py-1.5 text-white">
-                    <span className="text-[11px] text-white/70">{p.month}</span>
-                    <span className="font-display text-xl leading-none">{p.day}</span>
+                  <span className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-blue-600/30 border border-blue-400/30 py-1.5 text-white">
+                    <span className="text-[10px] font-mono uppercase text-blue-300">{p.month}</span>
+                    <span className="font-display text-xl font-bold leading-none mt-0.5">{p.day}</span>
                   </span>
-                  <span className="min-w-0 space-y-1">
-                    <span className="block text-[15px] font-semibold leading-snug text-ink group-hover:text-blue-200">
+                  <span className="min-w-0 flex-1 space-y-1">
+                    <span className="block text-sm font-bold leading-snug text-white group-hover:text-blue-300 transition-colors">
                       {e.title}
                     </span>
-                    <span className="flex items-center gap-1.5 text-sm text-muted">
-                      <Clock className="size-3.5" />
-                      {formatTime(e.startTime)} – {formatTime(e.endTime)}
+                    <span className="flex items-center gap-1.5 text-xs text-zinc-400">
+                      <Clock className="size-3.5 text-blue-400" />
+                      <span>{formatTime(e.startTime)} – {formatTime(e.endTime)}</span>
                     </span>
-                    <span className="flex items-center gap-1.5 text-sm text-muted">
-                      <MapPin className="size-3.5" />
-                      {e.venue}
+                    <span className="flex items-center gap-1.5 text-xs text-zinc-300">
+                      <MapPin className="size-3.5 text-blue-400" />
+                      <span className="font-medium">{e.venue}</span>
                     </span>
                   </span>
                 </button>
