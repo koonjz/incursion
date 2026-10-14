@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   description: "See upcoming events, pending reviews and conflicts across campus.",
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function DashboardPage() {
   const events = await getAllCampusEvents();
   return <DashboardOverviewView initialEvents={events} />;

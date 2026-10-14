@@ -97,13 +97,12 @@ export function EventSubmissionForm() {
           </p>
         )}
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
-          {canAccessSubmissions ? (
+          <Button variant="outline" onClick={() => router.push("/dashboard")}>
+            Go to Dashboard
+          </Button>
+          {canAccessSubmissions && (
             <Button variant="outline" onClick={() => router.push("/events/my-submissions")}>
-              Go to My submissions
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={() => router.push("/dashboard")}>
-              Back to Overview
+              My submissions
             </Button>
           )}
           <Button onClick={() => router.push("/calendar")}>
