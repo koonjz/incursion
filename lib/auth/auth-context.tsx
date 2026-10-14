@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useSyncExternalStore } from "react";
+import { signOut } from "next-auth/react";
 
 export type UserRole = "acm_core" | "acm_executive" | "other_club_core";
 
@@ -124,16 +125,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const user = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   React.useEffect(() => {
-    // Do not auto-sync profile if user is on the login/signup page to avoid overriding their entered credentials
-    if (
-      typeof window !== "undefined" &&
-      (window.location.pathname === "/login" || window.location.pathname === "/signup")
-    ) {
-      return;
-    }
+    // If the client already has an authenticated user in localStorage,
+    // verify and sync that specific account. If none, sync server session (e.g. OAuth).
+    let currentParsed: AuthUser | null = null;
+    try {
+      const currentRaw = localStorage.getItem(STORAGE_KEY);
+      currentParsed = currentRaw ? JSON.parse(currentRaw) : null;
+    } catch {}
 
-    // Sync with server session (e.g. from Google OAuth callback)
-    fetch("/api/auth/profile")
+    const query =
+      currentParsed?.email && currentParsed.email !== "user@campus.edu"
+        ? `?email=${encodeURIComponent(currentParsed.email)}`
+        : "";
+
+    fetch("/api/auth/profile" + query)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.user?.email) {
@@ -158,12 +163,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ) {
             role = u.role;
           }
-
-          const currentRaw = localStorage.getItem(STORAGE_KEY);
-          let currentParsed: AuthUser | null = null;
-          try {
-            currentParsed = currentRaw ? JSON.parse(currentRaw) : null;
-          } catch {}
 
           const targetName =
             pendingName && pendingName.trim()
@@ -261,14 +260,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem("acm_pending_role");
       localStorage.removeItem("acm_pending_dept");
       localStorage.removeItem("acm_pending_name");
+      cachedUser = DEFAULT_USER;
+      cachedRaw = null;
       document.cookie =
         "next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
       document.cookie =
         "__Secure-next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure";
-      fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     } catch {
       // ignore
     }
+
+    // Purge server HttpOnly cookies
+    fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+
+    // Invalidate client-side NextAuth state
+    try {
+      signOut({ redirect: false }).catch(() => {});
+    } catch {
+      // ignore
+    }
+
     notify();
   };
 

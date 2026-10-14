@@ -23,6 +23,8 @@ export const authOptions: NextAuthOptions = {
             authorization: {
               params: {
                 prompt: "select_account",
+                access_type: "offline",
+                response_type: "code",
                 ...(APP_CONFIG.auth.allowedEmailDomain && APP_CONFIG.auth.allowedEmailDomain !== "*"
                   ? { hd: APP_CONFIG.auth.allowedEmailDomain }
                   : {}),

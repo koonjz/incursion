@@ -30,7 +30,7 @@ type LoginView = "login" | "forgot_email" | "forgot_verify";
 
 export function LoginForm() {
   const router = useRouter();
-  const { login, logout } = useAuth();
+  const { login } = useAuth();
 
   const [view, setView] = useState<LoginView>("login");
 
@@ -53,20 +53,7 @@ export function LoginForm() {
   const [sandboxNotice, setSandboxNotice] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  // Restore remembered email if available
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("acm_resolve_auth_user");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.email && parsed.email !== "user@campus.edu") {
-          setEmail(parsed.email);
-        }
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+  // Do not restore stale email by default so users can log into different accounts cleanly
 
   // Cooldown timer
   useEffect(() => {
@@ -81,18 +68,14 @@ export function LoginForm() {
     try {
       setLoading(true);
       setError(null);
-
-      // Clear any stale local/server session so the previous account doesn't auto-login
-      await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
-      logout();
-
       const cleanEmail = email.trim().toLowerCase();
+      // Force Google account chooser so it doesn't automatically log in with browser default account
       await signIn(
         "google",
         { callbackUrl: "/dashboard" },
         {
           prompt: "select_account",
-          ...(cleanEmail ? { login_hint: cleanEmail } : {}),
+          ...(cleanEmail && cleanEmail.includes("@") ? { login_hint: cleanEmail } : {}),
         }
       );
     } catch {
@@ -116,6 +99,9 @@ export function LoginForm() {
     const cleanEmail = email.trim().toLowerCase();
 
     try {
+      // Clear any stale session cookies from previous logins
+      await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+
       const res = await fetch("/api/auth/login-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -134,6 +120,17 @@ export function LoginForm() {
 
       const u = data.user;
       login(u.role as UserRole, u.email, u.name, u.department, u.avatar);
+
+      // In background, sync with NextAuth credentials provider if applicable
+      try {
+        await signIn("credentials", {
+          redirect: false,
+          email: cleanEmail,
+          password: password,
+        });
+      } catch {
+        // non-blocking fallback
+      }
 
       const destination =
         typeof window !== "undefined"

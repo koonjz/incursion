@@ -73,7 +73,6 @@ export function SignupForm() {
     try {
       setLoading(true);
       setError(null);
-      await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
       if (typeof window !== "undefined") {
         localStorage.setItem("acm_pending_role", selectedRole);
         if (department.trim()) {
@@ -89,7 +88,7 @@ export function SignupForm() {
         { callbackUrl: "/dashboard" },
         {
           prompt: "select_account",
-          ...(cleanEmail ? { login_hint: cleanEmail } : {}),
+          ...(cleanEmail && cleanEmail.includes("@") ? { login_hint: cleanEmail } : {}),
         }
       );
     } catch {

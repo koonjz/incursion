@@ -96,6 +96,19 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Clear any previous or chunked session cookies to prevent cross-account pollution
+    const oldCookieNames = [
+      "__Secure-next-auth.session-token",
+      "next-auth.session-token.0",
+      "next-auth.session-token.1",
+      "__Secure-next-auth.session-token.0",
+      "__Secure-next-auth.session-token.1",
+      "next-auth.csrf-token",
+    ];
+    for (const name of oldCookieNames) {
+      response.cookies.set(name, "", { path: "/", maxAge: 0, expires: new Date(0) });
+    }
+
     response.cookies.set("next-auth.session-token", cookieToken, {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
