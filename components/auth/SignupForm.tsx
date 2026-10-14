@@ -73,6 +73,7 @@ export function SignupForm() {
     try {
       setLoading(true);
       setError(null);
+      await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
       if (typeof window !== "undefined") {
         localStorage.setItem("acm_pending_role", selectedRole);
         if (department.trim()) {
@@ -82,7 +83,15 @@ export function SignupForm() {
           localStorage.setItem("acm_pending_name", fullName.trim());
         }
       }
-      await signIn("google", { callbackUrl: "/dashboard" });
+      const cleanEmail = email.trim().toLowerCase();
+      await signIn(
+        "google",
+        { callbackUrl: "/dashboard" },
+        {
+          prompt: "select_account",
+          ...(cleanEmail ? { login_hint: cleanEmail } : {}),
+        }
+      );
     } catch {
       setError("Unable to initiate Google sign in.");
       setLoading(false);

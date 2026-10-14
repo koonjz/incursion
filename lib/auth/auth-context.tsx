@@ -124,6 +124,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const user = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   React.useEffect(() => {
+    // Do not auto-sync profile if user is on the login/signup page to avoid overriding their entered credentials
+    if (
+      typeof window !== "undefined" &&
+      (window.location.pathname === "/login" || window.location.pathname === "/signup")
+    ) {
+      return;
+    }
+
     // Sync with server session (e.g. from Google OAuth callback)
     fetch("/api/auth/profile")
       .then((res) => (res.ok ? res.json() : null))
@@ -257,6 +265,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         "next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
       document.cookie =
         "__Secure-next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure";
+      fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     } catch {
       // ignore
     }

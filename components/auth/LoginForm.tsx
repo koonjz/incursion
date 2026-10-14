@@ -81,7 +81,20 @@ export function LoginForm() {
     try {
       setLoading(true);
       setError(null);
-      await signIn("google", { callbackUrl: "/dashboard" });
+
+      // Clear any stale local/server session so the previous account doesn't auto-login
+      await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+      logout();
+
+      const cleanEmail = email.trim().toLowerCase();
+      await signIn(
+        "google",
+        { callbackUrl: "/dashboard" },
+        {
+          prompt: "select_account",
+          ...(cleanEmail ? { login_hint: cleanEmail } : {}),
+        }
+      );
     } catch {
       setError("Unable to initiate Google sign in.");
       setLoading(false);
