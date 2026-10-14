@@ -82,7 +82,15 @@ export function SignupForm() {
           localStorage.setItem("acm_pending_name", fullName.trim());
         }
       }
-      await signIn("google", { callbackUrl: "/dashboard" });
+      const cleanEmail = email.trim().toLowerCase();
+      await signIn(
+        "google",
+        { callbackUrl: "/dashboard" },
+        {
+          prompt: "select_account",
+          ...(cleanEmail && cleanEmail.includes("@") ? { login_hint: cleanEmail } : {}),
+        }
+      );
     } catch {
       setError("Unable to initiate Google sign in.");
       setLoading(false);

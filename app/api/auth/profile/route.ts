@@ -56,7 +56,29 @@ export async function GET(req: NextRequest) {
     let tokenName: string | undefined;
     let tokenAvatar: string | undefined;
 
-    // 1. Try getToken from NextAuth JWT
+    // 1. Check for explicit session or demo cookie first
+    const cookie =
+      req.cookies.get("next-auth.session-token")?.value ||
+      req.cookies.get("__Secure-next-auth.session-token")?.value;
+
+    if (cookie && (cookie.startsWith("session.") || cookie.startsWith("demo."))) {
+      const parts = cookie.split(".");
+      for (const part of parts) {
+        try {
+          const raw = Buffer.from(part, "base64").toString("utf-8");
+          const parsed = JSON.parse(decodeURIComponent(escape(raw)));
+          if (parsed?.email) {
+            email = parsed.email;
+            if (parsed.name) tokenName = parsed.name;
+            break;
+          }
+        } catch {
+          // ignore non-json segments
+        }
+      }
+    }
+
+    // 2. Try getToken from NextAuth JWT
     if (!email) {
       try {
         const token = await getToken({
@@ -73,7 +95,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 2. Try getServerSession
+    // 3. Try getServerSession
     if (!email) {
       try {
         const session = await getServerSession(authOptions);
@@ -84,29 +106,6 @@ export async function GET(req: NextRequest) {
         }
       } catch {
         // continue
-      }
-    }
-
-    // 3. Cookie fallback
-    if (!email) {
-      const cookie =
-        req.cookies.get("next-auth.session-token")?.value ||
-        req.cookies.get("__Secure-next-auth.session-token")?.value;
-      if (cookie && cookie.includes(".")) {
-        const parts = cookie.split(".");
-        for (const part of parts) {
-          try {
-            const raw = Buffer.from(part, "base64").toString("utf-8");
-            const parsed = JSON.parse(decodeURIComponent(escape(raw)));
-            if (parsed?.email) {
-              email = parsed.email;
-              if (parsed.name) tokenName = parsed.name;
-              break;
-            }
-          } catch {
-            // ignore
-          }
-        }
       }
     }
 
