@@ -23,6 +23,9 @@ export async function generateMetadata({ params }: VerificationDetailPageProps):
   };
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function VerificationDetailPage({ params }: VerificationDetailPageProps) {
   const { id } = await params;
   const dbEvent = await prisma.event.findUnique({

@@ -48,12 +48,49 @@ export function VerificationDetailWorkspace({ event, conflict }: { event: Campus
     return null;
   }
 
-  const decide = (d: Decision) => {
+  const decide = async (d: Decision) => {
     setBusy(true);
-    setTimeout(() => {
-      setBusy(false);
+
+    try {
+      const decisionMap: Record<Decision, "APPROVED" | "CHANGES_REQUESTED" | "REJECTED"> = {
+        approved: "APPROVED",
+        changes_requested: "CHANGES_REQUESTED",
+        rejected: "REJECTED",
+      };
+
+      const payload = {
+        decision: decisionMap[d],
+        comment: notes.trim() || (d === "approved" ? "Approved by ACM Core reviewer" : undefined),
+        changesRequested: d === "changes_requested" && changes.trim() ? [changes.trim()] : [],
+        overrideConflict: true,
+      };
+
+      const res = await fetch(`/api/events/${event.id}/review`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.message || data?.error || `Failed to submit review decision: ${res.statusText}`);
+      }
+
       setDone(d);
-    }, 700);
+
+      // Notify queue, dashboard, and other tabs that an event was reviewed/approved
+      try {
+        localStorage.setItem("acm_event_created", Date.now().toString());
+      } catch {}
+
+      router.refresh();
+    } catch (err: any) {
+      console.error("[review error]", err);
+      alert(err?.message || "Failed to submit review. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const locked = busy || !!done;
@@ -82,7 +119,13 @@ export function VerificationDetailWorkspace({ event, conflict }: { event: Campus
               <p className="text-sm text-emerald-300/90">{RESULT[done].text}</p>
             </div>
           </div>
-          <Button onClick={() => router.push("/verification")}>Back to queue</Button>
+          <Button
+            onClick={() => {
+              window.location.href = "/verification";
+            }}
+          >
+            Back to queue
+          </Button>
         </div>
       )}
 

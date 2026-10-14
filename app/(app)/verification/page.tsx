@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   description: "Review proposed events before they go on the campus calendar.",
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function VerificationPage() {
   const events = await getAllCampusEvents();
   return <VerificationQueueView initialEvents={events} />;

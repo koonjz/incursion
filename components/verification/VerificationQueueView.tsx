@@ -27,7 +27,54 @@ export function VerificationQueueView({ initialEvents }: { initialEvents?: Campu
   const [tab, setTab] = useState<Tab>("pending");
   const [query, setQuery] = useState("");
 
-  const eventList = initialEvents && initialEvents.length > 0 ? initialEvents : MOCK_VERIFICATION_QUEUE.map((q) => q.event);
+  const [eventList, setEventList] = useState<CampusEvent[]>(
+    initialEvents && initialEvents.length > 0 ? initialEvents : []
+  );
+
+  const refreshEvents = React.useCallback(() => {
+    fetch(`/api/events/campus?_t=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.data && Array.isArray(data.data)) {
+          setEventList(data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (initialEvents && Array.isArray(initialEvents) && initialEvents.length > 0) {
+      setEventList(initialEvents);
+    }
+  }, [initialEvents]);
+
+  // Live polling every 3 seconds + storage broadcast listener
+  useEffect(() => {
+    refreshEvents();
+
+    const timer = setInterval(() => {
+      refreshEvents();
+    }, 3000);
+
+    const onFocus = () => refreshEvents();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "acm_event_created") {
+        refreshEvents();
+      }
+    };
+
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [refreshEvents]);
 
   useEffect(() => {
     if (!isAcmCore) {
@@ -39,7 +86,11 @@ export function VerificationQueueView({ initialEvents }: { initialEvents?: Campu
     return null;
   }
 
-  const queueItems = eventList.map((event) => ({
+  const sortedEvents = [...eventList].sort(
+    (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+  );
+
+  const queueItems = sortedEvents.map((event) => ({
     event,
     hasConflicts: event.conflictSeverity !== "none",
     conflictCount: event.conflictSeverity === "none" ? 0 : 1,

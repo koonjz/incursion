@@ -106,12 +106,18 @@ export async function getCurrentUser(req?: NextRequest): Promise<AuthenticatedUs
                 where: { email: cleanEmail },
                 select: { id: true, name: true, email: true, role: true, department: true, isActive: true },
               });
+
+              let mappedRole: UserRole = "STUDENT";
+              if (parsed.role === "ADMIN" || parsed.role === "acm_core") mappedRole = "ADMIN";
+              else if (parsed.role === "ORGANIZER" || parsed.role === "acm_executive") mappedRole = "ORGANIZER";
+              else if (parsed.role === "HOD") mappedRole = "HOD";
+
               if (dbUser && dbUser.isActive !== false) {
                 return {
                   id: dbUser.id,
                   name: dbUser.name,
                   email: dbUser.email,
-                  role: dbUser.role as UserRole,
+                  role: (dbUser.role as UserRole) || mappedRole,
                   department: dbUser.department,
                 };
               }
@@ -120,7 +126,7 @@ export async function getCurrentUser(req?: NextRequest): Promise<AuthenticatedUs
                 id: parsed.id || `usr_${cleanEmail.replace(/[^a-z0-9]/g, "_")}`,
                 name: parsed.name || cleanEmail.split("@")[0],
                 email: cleanEmail,
-                role: (parsed.role as UserRole) || "STUDENT",
+                role: mappedRole,
                 department: parsed.department,
               };
             }
