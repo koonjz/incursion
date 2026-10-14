@@ -30,7 +30,7 @@ type LoginView = "login" | "forgot_email" | "forgot_verify";
 
 export function LoginForm() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
 
   const [view, setView] = useState<LoginView>("login");
 
