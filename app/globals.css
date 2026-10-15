@@ -515,3 +515,35 @@ p {
   animation: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: var(--delay, 0ms);
 }
+
+
+/* Fix native dropdown visibility in dark mode */
+select {
+  color-scheme: dark !important;
+  background-color: #191e29 !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #343b4a;
+}
+
+/* Dropdown options */
+select option {
+  background-color: #191e29 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Selected option */
+select option:checked {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+/* Hovered options where supported */
+select option:hover {
+  background-color: #263449 !important;
+  color: #ffffff !important;
+}
+
+/* Disabled options */
+select option:disabled {
+  color: #94a3b8 !important;
+}
