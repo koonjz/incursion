@@ -48,12 +48,12 @@ export function LandingExperience({
       <section
         id="events"
         className="relative isolate w-full overflow-hidden pt-24 pb-14 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-24"
-      >
+      >                    
         {/* Animated Particle-Wave Background canvas */}
         <ParticleWave />
 
         {/* Hero Content Container */}
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full min-w-0">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full min-w-0">
           <div className="grid items-center gap-10 lg:grid-cols-[1fr_1.1fr] xl:gap-14">
             {/* Left Column: Command Center Copy & Actions */}
             <div className="hero-rise w-full max-w-xl lg:max-w-none space-y-5 sm:space-y-6 lg:space-y-7 min-w-0">
