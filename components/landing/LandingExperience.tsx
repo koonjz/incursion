@@ -14,7 +14,7 @@ import { EventCardStack } from "./EventCardStack";
 import { LandingCalendar } from "./LandingCalendar";
 import { EventQuickView } from "./EventQuickView";
 import { SectionHead } from "./SectionHead";
-import { ParticleWave } from "@/components/ParticleWave";
+import ParticleWave from "@/components/ParticleWave";
 import type { CampusEvent } from "@/lib/types/event";
 
 export interface HeroStat {
@@ -47,7 +47,7 @@ export function LandingExperience({
     <>
       <section
         id="events"
-        className="relative w-full overflow-hidden pt-24 pb-14 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-24"
+        className="relative isolate w-full overflow-hidden pt-24 pb-14 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-24"
       >
         {/* Animated Particle-Wave Background canvas */}
         <ParticleWave />
