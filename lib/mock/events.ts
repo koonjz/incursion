@@ -9,6 +9,213 @@ export const MOCK_CLUBS: Club[] = [
   { id: "design", name: "Design & UX Guild", category: "Cultural", leadEmail: "studio@designguild.campus.edu" },
   { id: "cp", name: "Competitive Programming Wing", category: "Technical", leadEmail: "coach@cpwing.campus.edu" },
   { id: "ai", name: "Machine Intelligence Group", category: "Technical", leadEmail: "admin@ai-group.campus.edu" },
+    // ===== SVNIT Surat: Technical Fests & Clubs =====
+  {
+    id: "mindbend",
+    name: "MindBend Organizing Team",
+    category: "Technical",
+    leadEmail: "",
+  },
+  {
+    id: "drishti",
+    name: "Drishti",
+    category: "Technical",
+    leadEmail: "",
+  },
+  {
+    id: "acm-svnit",
+    name: "ACM Student Chapter, SVNIT",
+    category: "Technical",
+    leadEmail: "",
+  },
+  {
+    id: "ieee-svnit",
+    name: "IEEE Student Branch, SVNIT",
+    category: "Technical",
+    leadEmail: "",
+  },
+  {
+    id: "coding-club",
+    name: "Competitive Programming Club",
+    category: "Technical",
+    leadEmail: "",
+  },
+  {
+    id: "webdev-club",
+    name: "Web Development Club",
+    category: "Technical",
+    leadEmail: "",
+  },
+  {
+    id: "robotics-club",
+    name: "Robotics & Automation Club",
+    category: "Technical",
+    leadEmail: "",
+  },
+  {
+    id: "ai-ml-club",
+    name: "AI & Machine Learning Club",
+    category: "Technical",
+    leadEmail: "",
+  },
+
+  // ===== Cultural & Creative Organizations =====
+  {
+    id: "sparsh",
+    name: "Sparsh Organizing Team",
+    category: "Cultural",
+    leadEmail: "",
+  },
+  {
+    id: "autumnfest",
+    name: "Autumnfest Organizing Team",
+    category: "Cultural",
+    leadEmail: "",
+  },
+  {
+    id: "chrd-design",
+    name: "CHRD Design Group",
+    category: "Cultural",
+    leadEmail: "",
+  },
+  {
+    id: "photography-club",
+    name: "Photography Club",
+    category: "Cultural",
+    leadEmail: "",
+  },
+  {
+    id: "music-club",
+    name: "Music Club",
+    category: "Cultural",
+    leadEmail: "",
+  },
+  {
+    id: "dance-club",
+    name: "Dance Club",
+    category: "Cultural",
+    leadEmail: "",
+  },
+  {
+    id: "literary-club",
+    name: "Literary Club",
+    category: "Cultural",
+    leadEmail: "",
+  },
+  {
+    id: "design-club",
+    name: "Design & Creative Arts Club",
+    category: "Cultural",
+    leadEmail: "",
+  },
+
+  // ===== Student Bodies & Institutional Organizations =====
+  {
+    id: "student-council",
+    name: "SVNIT Student Council",
+    category: "Departmental",
+    leadEmail: "",
+  },
+  {
+    id: "women-cell",
+    name: "Women Cell, SVNIT",
+    category: "Departmental",
+    leadEmail: "",
+  },
+  {
+    id: "cce-svnit",
+    name: "Centre for Continuing Education (CCE)",
+    category: "Academic",
+    leadEmail: "",
+  },
+
+  // ===== Departmental Organizations =====
+  {
+    id: "cse-department",
+    name: "Computer Science & Engineering Department",
+    category: "Departmental",
+    leadEmail: "",
+  },
+  {
+    id: "ece-department",
+    name: "Electronics Engineering Department",
+    category: "Departmental",
+    leadEmail: "",
+  },
+  {
+    id: "electrical-department",
+    name: "Electrical Engineering Department",
+    category: "Departmental",
+    leadEmail: "",
+  },
+  {
+    id: "mechanical-department",
+    name: "Mechanical Engineering Department",
+    category: "Departmental",
+    leadEmail: "",
+  },
+  {
+    id: "civil-department",
+    name: "Civil Engineering Department",
+    category: "Departmental",
+    leadEmail: "",
+  },
+  {
+    id: "chemical-department",
+    name: "Chemical Engineering Department",
+    category: "Departmental",
+    leadEmail: "",
+  },
+  {
+    id: "mathematics-department",
+    name: "Mathematics Department",
+    category: "Departmental",
+    leadEmail: "",
+  },
+  {
+    id: "physics-department",
+    name: "Physics Department",
+    category: "Departmental",
+    leadEmail: "",
+  },
+  {
+    id: "chemistry-department",
+    name: "Chemistry Department",
+    category: "Departmental",
+    leadEmail: "",
+  },
+
+  // ===== Sports & Other Organizations =====
+  {
+    id: "sports-committee",
+    name: "Sports Committee",
+    category: "Sports",
+    leadEmail: "",
+  },
+  {
+    id: "student-activities",
+    name: "Student Activities Committee",
+    category: "Departmental",
+    leadEmail: "",
+  },
+  {
+    id: "independent",
+    name: "Independent Student Initiative",
+    category: "Departmental",
+    leadEmail: "",
+  },
+  {
+    id: "external-org",
+    name: "External Organization",
+    category: "Departmental",
+    leadEmail: "",
+  },
+  {
+    id: "other-club",
+    name: "Other",
+    category: "Departmental",
+    leadEmail: "",
+  },
 ];
 
 export const MOCK_VENUES: Venue[] = [

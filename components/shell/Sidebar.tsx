@@ -66,7 +66,7 @@ export function Sidebar({ onNavClick, className, bare = false }: SidebarProps) {
     <aside
       className={cn(
         "flex h-full w-64 flex-col justify-between p-4",
-        !bare && "glass rounded-[var(--radius-hero)]",
+        !bare && "glass-strong rounded-[var(--radius-hero)] border border-white/10 bg-[#0a0d18]",
         className
       )}
     >
@@ -85,21 +85,21 @@ export function Sidebar({ onNavClick, className, bare = false }: SidebarProps) {
                 onClick={onNavClick}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-[background-color,color,box-shadow] duration-200",
+                  "flex items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-200",
                   active
-                    ? "bg-gradient-to-b from-blue-500 to-blue-700 text-white shadow-[0_8px_18px_-8px_rgba(37,99,235,0.5),inset_0_1px_0_rgba(255,255,255,0.18)]"
-                    : "text-body hover:bg-white/6 hover:text-ink"
+                    ? "border border-blue-500/30 bg-blue-500/15 text-white shadow-sm font-semibold"
+                    : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
                 )}
               >
                 <span className="flex items-center gap-3">
-                  <Icon className={cn("size-[18px]", active ? "text-white" : "text-blue-300")} />
+                  <Icon className={cn("size-[18px]", active ? "text-blue-400" : "text-zinc-400")} />
                   {title}
                 </span>
                 {!!badge && (
                   <span
                     className={cn(
                       "rounded-full px-2 py-0.5 text-xs font-semibold",
-                      active ? "bg-white/20 text-white" : "bg-blue-400/15 text-blue-100"
+                      active ? "bg-blue-500 text-white" : "bg-blue-400/15 text-blue-300"
                     )}
                   >
                     {badge}

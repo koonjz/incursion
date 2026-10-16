@@ -1,31 +1,90 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Clock, MapPin, Users } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  MapPin,
+  Users,
+  ShieldCheck,
+  AlertTriangle,
+  RotateCw,
+  Layers,
+  ArrowRight,
+  Terminal,
+  GraduationCap,
+  Code2,
+  Presentation,
+  Trophy,
+  Sparkles,
+  Network,
+  Calendar,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, eventDateParts, formatTime } from "@/lib/utils";
-import type { CampusEvent } from "@/lib/types/event";
+import type { CampusEvent, EventType } from "@/lib/types/event";
 
-const BANNERS = [
-  "from-blue-600 to-navy-950",
-  "from-blue-600 to-navy-900",
-  "from-blue-700 to-navy-950",
-  "from-blue-500 to-blue-800",
-  "from-blue-600 to-navy-900",
+// Card accent themes (the frame itself is plain white; these only tint pills and the date block)
+const CARD_THEMES = [
+  {
+    pill: "bg-cyan-500/10 text-cyan-300 border-cyan-400/30",
+    dateGradient: "from-cyan-950 via-[#0a121e] to-[#070b14]",
+  },
+  {
+    pill: "bg-sky-500/10 text-sky-300 border-sky-400/30",
+    dateGradient: "from-sky-950 via-[#0a121e] to-[#070b14]",
+  },
+  {
+    pill: "bg-teal-500/10 text-teal-300 border-teal-400/30",
+    dateGradient: "from-teal-950 via-[#0a121e] to-[#070b14]",
+  },
+  {
+    pill: "bg-blue-500/10 text-blue-300 border-blue-400/30",
+    dateGradient: "from-blue-950 via-[#0a121e] to-[#070b14]",
+  },
 ];
 
-// Resting pose for each depth in the stack (0 = top card).
+// Physical layered deck depth with subtle rotation and scaling.
+// `o` is applied as a dark dimming layer (cards stay opaque, so no see-through).
 const DEPTH = [
   { y: 0, s: 1, r: 0, o: 1 },
-  { y: 20, s: 0.95, r: -2.4, o: 1 },
-  { y: 38, s: 0.9, r: 2.6, o: 0.92 },
-  { y: 54, s: 0.85, r: -1.6, o: 0.75 },
+  { y: 10, s: 0.96, r: -1.2, o: 0.82 },
+  { y: 20, s: 0.92, r: 1.2, o: 0.62 },
+  { y: 30, s: 0.88, r: -0.6, o: 0.38 },
 ];
-const FLY_MS = 360;
-const SWIPE_DISTANCE = 90;
+
+const FLY_MS = 380;
+const SWIPE_DISTANCE = 60;
 
 type Leaving = { idx: number; dir: 1 | -1 };
 type Entering = { idx: number; go: boolean };
+
+/**
+ * Meaningful category icon identification using only installed lucide-react icons
+ */
+function CategoryIcon({ type }: { type: EventType }) {
+  switch (type) {
+    case "Workshop":
+      return <Terminal className="size-3.5 text-cyan-400 shrink-0" />;
+    case "Symposium":
+      return <GraduationCap className="size-3.5 text-cyan-400 shrink-0" />;
+    case "Hackathon":
+      return <Code2 className="size-3.5 text-cyan-400 shrink-0" />;
+    case "Guest Lecture":
+      return <Presentation className="size-3.5 text-cyan-400 shrink-0" />;
+    case "Competition":
+      return <Trophy className="size-3.5 text-amber-400 shrink-0" />;
+    case "Cultural":
+      return <Sparkles className="size-3.5 text-purple-400 shrink-0" />;
+    case "General Meeting":
+      return <Users className="size-3.5 text-blue-400 shrink-0" />;
+    case "Networking":
+      return <Network className="size-3.5 text-teal-400 shrink-0" />;
+    default:
+      return <Calendar className="size-3.5 text-cyan-400 shrink-0" />;
+  }
+}
 
 export function EventCardStack({
   events,
@@ -43,6 +102,7 @@ export function EventCardStack({
   const [leaving, setLeaving] = useState<Leaving | null>(null);
   const [entering, setEntering] = useState<Entering | null>(null);
   const [recycled, setRecycled] = useState<number | null>(null);
+  const [flipped, setFlipped] = useState(false);
 
   const busy = leaving !== null || entering !== null;
   const pointer = useRef<{ x: number; y: number } | null>(null);
@@ -53,7 +113,6 @@ export function EventCardStack({
     timers.current.push(window.setTimeout(fn, ms));
   }, []);
   const nextFrame = useCallback((fn: () => void) => {
-    // Two frames guarantee the previous style was actually painted.
     requestAnimationFrame(() => requestAnimationFrame(fn));
   }, []);
 
@@ -65,6 +124,7 @@ export function EventCardStack({
   const goNext = useCallback(
     (dir: 1 | -1 = 1) => {
       if (busy || n < 2) return;
+      setFlipped(false);
       const idx = active;
       setLeaving({ idx, dir });
       setActive((active + 1) % n);
@@ -79,16 +139,17 @@ export function EventCardStack({
 
   const goPrev = useCallback(() => {
     if (busy || n < 2) return;
+    setFlipped(false);
     const idx = (active - 1 + n) % n;
     setActive(idx);
     setEntering({ idx, go: false });
     nextFrame(() => setEntering({ idx, go: true }));
-    later(() => setEntering(null), 520);
+    later(() => setEntering(null), 500);
   }, [active, busy, later, n, nextFrame]);
 
   const jumpTo = (target: number) => {
     if (busy || target === active) return;
-    // Walk forward one card at a time so every step keeps the swipe feel.
+    setFlipped(false);
     const steps = (target - active + n) % n;
     if (steps === 1) return goNext();
     setActive(target);
@@ -132,52 +193,88 @@ export function EventCardStack({
     } else if (e.key === "ArrowLeft") {
       e.preventDefault();
       goPrev();
+    } else if (e.key === " " || e.key === "f" || e.key === "F") {
+      e.preventDefault();
+      setFlipped((f) => !f);
     }
   };
 
   if (n === 0) return null;
 
   return (
-    <div className="mx-auto w-full max-w-[24rem]">
+    <div className="relative z-10 mx-auto w-full max-w-[34rem] sm:max-w-[36rem] lg:max-w-[38rem] xl:max-w-[42rem] min-w-0">
+      {/* Top Deck Action Bar */}
+      <div className="mb-3 flex items-center justify-between px-1 text-xs">
+        <div className="flex items-center gap-2 text-zinc-300 font-medium min-w-0">
+          <Layers className="size-3.5 text-cyan-400 shrink-0" />
+          <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 truncate">
+            Event Frame
+          </span>
+          <span className="rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 text-[11px] font-mono text-cyan-300 shrink-0">
+            {active + 1} / {n}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setFlipped(!flipped)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#0a1018] px-2.5 sm:px-3 py-1 text-[11px] font-medium text-zinc-300 transition-colors hover:border-cyan-500/30 hover:bg-[#101a26] hover:text-white shrink-0"
+        >
+          <RotateCw
+            className={cn(
+              "size-3 text-cyan-400 transition-transform duration-300",
+              flipped && "rotate-180"
+            )}
+          />
+          <span>{flipped ? "Event Card" : "Diagnostics"}</span>
+        </button>
+      </div>
+
+      {/* Main Widescreen Card Stack Container with Overflow Guard */}
       <div
         role="group"
         aria-roledescription="carousel"
-        aria-label="Upcoming events"
+        aria-label="Upcoming campus events deck"
         tabIndex={0}
         onKeyDown={onKeyDown}
-        className="relative h-[31.5rem] rounded-3xl focus-visible:outline-2 focus-visible:outline-offset-8"
+        className="relative h-[25.5rem] sm:h-[22rem] rounded-3xl overflow-hidden sm:overflow-visible focus-visible:outline-2 focus-visible:outline-cyan-400 focus-visible:outline-offset-8"
       >
         {events.map((event, i) => {
           const p = (i - active + n) % n;
           const isLeaving = leaving?.idx === i;
           const isEnteringStart = entering?.idx === i && !entering.go;
           const isTop = p === 0 && !isLeaving;
+          const theme = CARD_THEMES[i % CARD_THEMES.length];
 
           let transform: string;
           let opacity: number;
           let zIndex = n - p;
+          // Dark dimming layer for cards sitting behind the top card.
+          // Cards stay fully opaque so the background never shows through.
+          let dim = 0;
 
           if (isLeaving && leaving) {
-            transform = `translate3d(${leaving.dir * 125}%, -24px, 0) rotate(${leaving.dir * 16}deg)`;
+            transform = `translate3d(${leaving.dir * 115}%, -16px, 0) rotate(${leaving.dir * 10}deg)`;
             opacity = 0;
             zIndex = n + 2;
           } else if (isEnteringStart) {
-            transform = "translate3d(-125%, -24px, 0) rotate(-16deg)";
+            transform = "translate3d(-115%, -16px, 0) rotate(-10deg)";
             opacity = 0;
             zIndex = n + 2;
           } else if (p === 0) {
-            transform = dragging ? `translate3d(${dx}px, 0, 0) rotate(${dx * 0.045}deg)` : "none";
+            transform = dragging
+              ? `translate3d(${dx}px, 0, 0) rotate(${dx * 0.03}deg)`
+              : "none";
             opacity = 1;
           } else if (p < visible) {
             const d = DEPTH[p];
             transform = `translate3d(0, ${d.y}px, 0) scale(${d.s}) rotate(${d.r}deg)`;
-            opacity = d.o;
+            opacity = 1;
+            dim = 1 - d.o;
           } else {
-            transform = "translate3d(0, 64px, 0) scale(0.8)";
+            transform = "translate3d(0, 40px, 0) scale(0.85)";
             opacity = 0;
           }
 
-          // A card that just flew off re-appears at the back with a fade, not a flight.
           const instant = recycled === i || isEnteringStart;
           if (recycled === i) opacity = 0;
 
@@ -191,7 +288,7 @@ export function EventCardStack({
               data-instant={instant}
               inert={!isTop}
               aria-hidden={!isTop}
-              aria-label={`${event.title}, ${i + 1} of ${n}`}
+              aria-label={`${event.title}, card ${i + 1} of ${n}`}
               onPointerDown={isTop ? onPointerDown : undefined}
               onPointerMove={isTop ? onPointerMove : undefined}
               onPointerUp={isTop ? endDrag : undefined}
@@ -207,62 +304,260 @@ export function EventCardStack({
                     }
                   : undefined
               }
-              style={{ transform, opacity, zIndex, transformOrigin: "50% 100%" }}
+              style={{
+                transform,
+                opacity,
+                zIndex,
+                transformOrigin: "50% 100%",
+              }}
               className={cn(
-                "stack-card glass-strong absolute inset-x-0 top-0 flex h-[28rem] flex-col overflow-hidden rounded-[1.75rem]",
-                !isTop && "pointer-events-none"
+                // Rectangular frame: sharp corners, thick white border, solid fill
+                "stack-card absolute inset-x-0 top-0 h-[23.5rem] sm:h-[20.5rem] overflow-hidden rounded-none border-[8px] border-white bg-[#080c14] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.9)] transition-shadow",
+                !isTop && "pointer-events-none select-none"
               )}
             >
-              <div
-                className={cn(
-                  "relative bg-gradient-to-br px-6 pb-6 pt-5 text-white",
-                  BANNERS[i % BANNERS.length]
-                )}
-              >
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute -right-10 -top-16 size-48 rounded-full bg-white/10 blur-2xl"
-                />
-                <div className="relative flex items-center justify-between">
-                  <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium ring-1 ring-white/25">
-                    {event.eventType}
-                  </span>
-                  <span className="text-sm text-white/75">{parts.weekday}</span>
-                </div>
-                <div className="relative mt-7 flex items-end gap-3">
-                  <span className="font-display text-7xl font-medium leading-[0.85]">{parts.day}</span>
-                  <div className="pb-0.5">
-                    <p className="text-lg font-medium leading-tight">{parts.monthLong}</p>
-                    <p className="text-sm text-white/70">{parts.year}</p>
+              {/* Inner panel: fully opaque */}
+              <div className="relative flex h-full min-w-0 flex-col overflow-hidden bg-[#080c14]">
+                {/* CARD HEADER: Category (with icon) + Verified Status (with icon) */}
+                <div className="relative flex items-center justify-between border-b border-white/10 bg-[#0a1018] px-4 py-2.5 sm:px-5 sm:py-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold shrink-0",
+                        theme.pill
+                      )}
+                    >
+                      <CategoryIcon type={event.eventType} />
+                      <span>{event.eventType}</span>
+                    </span>
+                    <span className="hidden sm:inline text-xs text-zinc-400 font-medium truncate">
+                      {event.club}
+                    </span>
+                  </div>
+
+                  {/* Conflict / Verification status with icon */}
+                  <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black px-2.5 py-1 text-xs font-medium shrink-0">
+                    {event.conflictSeverity === "none" ? (
+                      <>
+                        <ShieldCheck className="size-3.5 text-emerald-400" />
+                        <span className="text-emerald-300 font-medium text-[11px] sm:text-xs">
+                          Verified • No Clash
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertTriangle className="size-3.5 text-amber-400" />
+                        <span className="text-amber-300 font-medium text-[11px] sm:text-xs">
+                          {event.conflictSeverity === "critical"
+                            ? "Critical Clash"
+                            : "Overlap Flagged"}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
+
+                {/* CARD CORE: FRONT VIEW vs DIAGNOSTICS VIEW */}
+                {!flipped || !isTop ? (
+                  /* FRONT VIEW - Two Column Body (Stacks on mobile, side-by-side on sm+) */
+                  <div className="flex flex-1 flex-col justify-between p-3.5 sm:p-5 min-w-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-[130px_1fr] gap-3 sm:gap-5 items-stretch min-w-0">
+                      {/* Left Frame: Prominent Date Block */}
+                      <div
+                        className={cn(
+                          "rounded-2xl border border-cyan-500/20 shadow-inner relative overflow-hidden bg-gradient-to-b",
+                          theme.dateGradient,
+                          // Mobile: compact horizontal bar
+                          "flex items-center justify-between p-2.5 sm:flex-col sm:justify-center sm:p-3 sm:text-center"
+                        )}
+                      >
+                        {/* Mobile left side: Day and Month/Year */}
+                        <div className="flex items-baseline gap-2 sm:flex-col sm:items-center sm:gap-0">
+                          {/* Sub-label weekday */}
+                          <span className="hidden sm:block text-[10px] tracking-widest uppercase font-semibold text-cyan-400 sm:mb-1">
+                            {parts.weekdayLong.toUpperCase()}
+                          </span>
+
+                          {/* Prominent Day number */}
+                          <span className="font-display text-2xl sm:text-4xl lg:text-[2.75rem] font-bold text-white tracking-tight leading-none">
+                            {parts.day}
+                          </span>
+
+                          {/* Month & Year */}
+                          <span className="text-xs font-semibold text-zinc-300 tracking-wide sm:mt-1">
+                            {parts.month.toUpperCase()} {parts.year}
+                          </span>
+                        </div>
+
+                        {/* Mobile right side: Weekday + Time */}
+                        <div className="flex items-center gap-2 sm:flex-col sm:gap-0 sm:mt-2">
+                          <span className="sm:hidden text-[11px] font-semibold text-cyan-400 uppercase tracking-wider">
+                            {parts.weekday.toUpperCase()}
+                          </span>
+                          <div className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-[#101822] px-2 py-0.5 text-[11px] font-mono text-zinc-300">
+                            <Clock className="size-3 text-cyan-400 shrink-0" />
+                            <span>{formatTime(event.startTime)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Frame: Title, Description & Metadata Row */}
+                      <div className="flex flex-col justify-between min-w-0">
+                        <div>
+                          <h3 className="line-clamp-2 font-display text-base sm:text-lg lg:text-xl font-bold leading-snug text-white break-words">
+                            {event.title}
+                          </h3>
+
+                          <p className="mt-1 text-xs text-zinc-300 line-clamp-2 leading-relaxed break-words">
+                            {event.description}
+                          </p>
+                        </div>
+
+                        {/* Metadata Row: time, venue, expected attendees (each with icon, wrapping naturally) */}
+                        <div className="mt-2.5 pt-2 border-t border-white/10 flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-zinc-300">
+                          <div className="flex items-center gap-1.5 rounded-lg border border-white/5 bg-[#0e1520] px-2 py-1">
+                            <Clock className="size-3.5 shrink-0 text-cyan-400" />
+                            <span className="truncate">
+                              {formatTime(event.startTime)} – {formatTime(event.endTime)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 rounded-lg border border-white/5 bg-[#0e1520] px-2 py-1">
+                            <MapPin className="size-3.5 shrink-0 text-cyan-400" />
+                            <span className="truncate font-medium text-white">
+                              {event.venue}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 rounded-lg border border-white/5 bg-[#0e1520] px-2 py-1">
+                            <Users className="size-3.5 shrink-0 text-cyan-400" />
+                            <span className="truncate">
+                              {event.expectedAttendance} Attendees
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card Bottom Footer: Organizer info and unchanged Action button */}
+                    <div className="mt-2.5 flex items-center justify-between border-t border-white/10 pt-2.5">
+                      <div className="flex items-center gap-2 truncate text-xs text-zinc-400 min-w-0">
+                        <span className="truncate">
+                          Host:{" "}
+                          <strong className="text-zinc-200 font-medium">
+                            {event.organizer}
+                          </strong>
+                        </span>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        onClick={() => onOpen(event)}
+                        tabIndex={isTop ? 0 : -1}
+                        className="h-8 px-4 text-xs font-semibold bg-white text-zinc-950 hover:bg-cyan-100 hover:text-black transition-colors shadow-sm shrink-0"
+                      >
+                        <span>Full Brief</span>
+                        <ArrowRight className="size-3.5 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  /* BACK / DIAGNOSTICS VIEW - Radar Specs */
+                  <div className="flex flex-1 flex-col justify-between p-3.5 sm:p-5 bg-[#070b14] animate-in fade-in zoom-in-95 duration-200 min-w-0">
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="size-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+                          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-300 truncate">
+                            Radar Diagnostics & Specs
+                          </span>
+                        </div>
+                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
+                          {event.id}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="rounded-xl border border-white/5 bg-[#0e1520] p-2 min-w-0">
+                          <span className="text-[10px] uppercase text-zinc-400 block font-mono">
+                            Allocated Venue
+                          </span>
+                          <span className="font-semibold text-white mt-0.5 block truncate">
+                            {event.venue}
+                          </span>
+                        </div>
+                        <div className="rounded-xl border border-white/5 bg-[#0e1520] p-2 min-w-0">
+                          <span className="text-[10px] uppercase text-zinc-400 block font-mono">
+                            Schedule Window
+                          </span>
+                          <span className="font-semibold text-cyan-300 mt-0.5 block truncate">
+                            {formatTime(event.startTime)} – {formatTime(event.endTime)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Conflict Risk Engine State */}
+                      <div className="rounded-xl border border-white/5 bg-[#0e1520] p-2 text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] text-zinc-400 truncate">
+                            Conflict Radar Assessment:
+                          </span>
+                          <span
+                            className={cn(
+                              "font-semibold text-[11px] shrink-0",
+                              event.conflictSeverity === "none"
+                                ? "text-emerald-400"
+                                : "text-amber-400"
+                            )}
+                          >
+                            {event.conflictSeverity === "none"
+                              ? "Verified Safe"
+                              : "Clash Flagged"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Target Audience Scope */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] text-zinc-400 mr-1">
+                          Audience:
+                        </span>
+                        {event.audience.map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-md border border-white/10 bg-[#101822] px-2 py-0.5 text-[10px] text-zinc-300"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-between border-t border-white/10 pt-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setFlipped(false)}
+                        className="text-xs text-cyan-400 hover:text-cyan-300 font-medium inline-flex items-center gap-1"
+                      >
+                        ← Return to Card
+                      </button>
+                      <Button
+                        size="sm"
+                        onClick={() => onOpen(event)}
+                        className="h-8 px-4 text-xs font-semibold bg-white text-zinc-950 hover:bg-cyan-100 hover:text-black transition-colors"
+                      >
+                        Full Details
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="flex flex-1 flex-col px-6 pb-5 pt-5">
-                <h3 className="line-clamp-3 font-display text-[1.375rem] font-medium leading-snug text-ink">
-                  {event.title}
-                </h3>
-                <ul className="mt-4 space-y-2 text-sm text-body">
-                  <li className="flex items-center gap-2.5">
-                    <Clock className="size-4 shrink-0 text-blue-300" />
-                    {formatTime(event.startTime)} – {formatTime(event.endTime)}
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <MapPin className="size-4 shrink-0 text-blue-300" />
-                    <span className="truncate">{event.venue}</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Users className="size-4 shrink-0 text-blue-300" />
-                    {event.expectedAttendance} expected
-                  </li>
-                </ul>
-                <div className="mt-auto flex items-center justify-between gap-3 border-t border-white/10 pt-4">
-                  <span className="truncate text-sm text-muted">{event.organizer}</span>
-                  <Button size="sm" onClick={() => onOpen(event)} tabIndex={isTop ? 0 : -1}>
-                    Details
-                  </Button>
-                </div>
-              </div>
+              {/* Dimming layer for cards behind the top card (keeps them opaque) */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 z-20 rounded-none bg-[#03060a] transition-opacity duration-300"
+                style={{ opacity: dim }}
+              />
             </article>
           );
         })}
@@ -272,35 +567,60 @@ export function EventCardStack({
         Event {active + 1} of {n}: {events[active].title}
       </p>
 
-      <div className="mt-2 flex items-center justify-between gap-4">
-        <Button variant="outline" size="icon" onClick={goPrev} disabled={busy || n < 2} aria-label="Previous event">
-          <ChevronLeft />
+      {/* Tactile Deck Controls */}
+      <div className="mt-3 flex items-center justify-between gap-4 px-1">
+        <Button
+          variant="secondary"
+          size="icon"
+          onClick={goPrev}
+          disabled={busy || n < 2}
+          aria-label="Previous event card"
+          className="size-9 rounded-xl border border-white/10 bg-[#0a1018] hover:bg-[#101a26] text-zinc-200 transition-colors shrink-0"
+        >
+          <ChevronLeft className="size-4" />
         </Button>
-        <div className="flex flex-col items-center gap-2">
-          <div className="flex items-center gap-1.5" role="tablist" aria-label="Choose event">
+
+        <div className="flex flex-col items-center gap-1 min-w-0">
+          <div
+            className="flex items-center gap-1.5"
+            role="tablist"
+            aria-label="Deck progress"
+          >
             {events.map((e, i) => (
               <button
                 key={e.id}
                 type="button"
                 role="tab"
                 aria-selected={i === active}
-                aria-label={`Show ${e.title}`}
+                aria-label={`Jump to ${e.title}`}
                 onClick={() => jumpTo(i)}
                 className="group flex h-6 cursor-pointer items-center px-0.5"
               >
                 <span
                   className={cn(
                     "h-1.5 rounded-full transition-all duration-300",
-                    i === active ? "w-6 bg-blue-600" : "w-1.5 bg-white/25 group-hover:bg-white/50"
+                    i === active
+                      ? "w-8 bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.7)]"
+                      : "w-2 bg-white/20 group-hover:bg-white/40"
                   )}
                 />
               </button>
             ))}
           </div>
-          <p className="text-xs text-muted">Swipe, drag or use the arrows</p>
+          <span className="text-[11px] font-medium text-zinc-400 truncate">
+            Swipe or use arrows • Space to flip
+          </span>
         </div>
-        <Button variant="outline" size="icon" onClick={() => goNext(1)} disabled={busy || n < 2} aria-label="Next event">
-          <ChevronRight />
+
+        <Button
+          variant="secondary"
+          size="icon"
+          onClick={() => goNext(1)}
+          disabled={busy || n < 2}
+          aria-label="Next event card"
+          className="size-9 rounded-xl border border-white/10 bg-[#0a1018] hover:bg-[#101a26] text-zinc-200 transition-colors shrink-0"
+        >
+          <ChevronRight className="size-4" />
         </Button>
       </div>
     </div>

@@ -18,13 +18,13 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "ACM Resolve | Campus events, without the clashes",
+  title: "ACM Resolve | Campus Event Intelligence & Conflict Radar",
   description:
-    "One shared calendar for campus events. Submit your event, check for scheduling conflicts instantly, and get it reviewed by ACM Core.",
+    "Institutional campus event operations and conflict-resolution platform. Check venue allocations in real-time, eliminate double-bookings, and track verification pipelines.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#04070f",
+  themeColor: "#07090e",
   width: "device-width",
   initialScale: 1,
 };

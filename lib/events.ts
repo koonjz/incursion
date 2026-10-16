@@ -2,16 +2,74 @@ import { prisma } from "@/src/lib/prisma";
 import type { CampusEvent, ConflictSeverity, EventStatus, EventType, ReviewItem } from "@/lib/types/event";
 
 export const EVENT_TYPE_OPTIONS: { value: EventType; label: string }[] = [
-  { value: "Workshop", label: "Workshop" },
-  { value: "Symposium", label: "Symposium" },
+  // Technical Events
+  { value: "Workshop", label: "Technical Workshop" },
   { value: "Hackathon", label: "Hackathon" },
-  { value: "Guest Lecture", label: "Guest lecture" },
+  { value: "Technical Talk", label: "Technical Talk" },
+  { value: "Guest Lecture", label: "Guest Lecture" },
+  { value: "Bootcamp", label: "Bootcamp" },
+  { value: "Ideathon", label: "Ideathon" },
+  { value: "Project Exhibition", label: "Project Exhibition" },
+
+  // Academic Events
+  { value: "Symposium", label: "Symposium" },
+  { value: "Conference", label: "Conference" },
+  { value: "Seminar", label: "Seminar" },
+  { value: "Academic Talk", label: "Academic Talk" },
+
+  // Competitions
   { value: "Competition", label: "Competition" },
-  { value: "Cultural", label: "Cultural" },
-  { value: "Networking", label: "Networking" },
+  { value: "Coding Competition", label: "Coding Competition" },
+  { value: "Quiz", label: "Quiz Competition" },
+  { value: "Case Study", label: "Case Study Competition" },
+
+  // Cultural Events
+  { value: "Cultural", label: "Cultural Event" },
+  { value: "Cultural Fest", label: "Cultural Fest" },
+  { value: "Music", label: "Music Event" },
+  { value: "Dance", label: "Dance Competition" },
+  { value: "Art & Design", label: "Art & Design Workshop" },
+  { value: "Photography", label: "Photography Workshop" },
+  { value: "Literary", label: "Literary Event" },
+  { value: "Open Mic", label: "Open Mic" },
+
+  // Student Activities
+  { value: "Networking", label: "Networking Event" },
+  { value: "General Meeting", label: "Club Meeting" },
+  { value: "Club Recruitment", label: "Club Recruitment" },
+  { value: "Orientation", label: "Orientation" },
+  { value: "Alumni Talk", label: "Alumni Talk" },
+  { value: "Panel Discussion", label: "Panel Discussion" },
+  { value: "Awareness Campaign", label: "Awareness Campaign" },
+
+  // Sports & Other Events
+  { value: "Sports", label: "Sports Event" },
+  { value: "Sports Tournament", label: "Sports Tournament" },
+  { value: "Social", label: "Social Event" },
+  { value: "Other", label: "Other" },
 ];
 
-export const AUDIENCE_OPTIONS = ["CSE", "ECE", "First Year", "Engineering", "General", "Technical"];
+export const AUDIENCE_OPTIONS = [
+  "CSE",
+  "ECE",
+  "Electrical Engineering",
+  "Mechanical Engineering",
+  "Civil Engineering",
+  "Chemical Engineering",
+  "Mathematics",
+  "Physics",
+  "Chemistry",
+  "First Year",
+  "Second Year",
+  "Third Year",
+  "Final Year",
+  "UG Students",
+  "PG Students",
+  "PhD Scholars",
+  "Engineering",
+  "Technical",
+  "General",
+];
 
 export const STATUS_LABEL: Record<EventStatus, string> = {
   draft: "Draft",

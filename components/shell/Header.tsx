@@ -46,7 +46,7 @@ export function Header() {
   }, []);
 
   return (
-    <header className="glass flex h-16 shrink-0 items-center justify-between gap-3 rounded-2xl px-3 sm:px-5">
+    <header className="glass-strong flex h-16 shrink-0 items-center justify-between gap-3 rounded-2xl px-3 sm:px-5 border border-white/10 bg-[#0a0d18]">
       <div className="flex min-w-0 items-center gap-2">
         <div className="lg:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
@@ -55,14 +55,14 @@ export function Header() {
                 <Menu />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-3">
+            <SheetContent side="left" className="w-72 p-3 bg-[#0a0d18] border-r border-white/10">
               <SheetTitle className="sr-only">Navigation</SheetTitle>
               <SheetDescription className="sr-only">Main app navigation</SheetDescription>
               <Sidebar bare onNavClick={() => setOpen(false)} className="w-full p-1" />
             </SheetContent>
           </Sheet>
         </div>
-        <h2 className="truncate text-base font-semibold text-ink sm:text-lg">{pageTitle(pathname)}</h2>
+        <h2 className="truncate text-base font-bold text-white sm:text-lg">{pageTitle(pathname)}</h2>
       </div>
 
       <div className="flex items-center gap-2">

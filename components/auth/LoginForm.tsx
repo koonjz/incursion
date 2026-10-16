@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/shared/Logo";
 import { useAuth, UserRole } from "@/lib/auth/auth-context";
 import { signIn } from "next-auth/react";
+import ClashDemo from "@/components/ClashDemo";
 
 type LoginView = "login" | "forgot_email" | "forgot_verify";
 
@@ -273,6 +274,10 @@ export function LoginForm() {
               </li>
             ))}
           </ul>
+
+          <div className="mt-8">
+            <ClashDemo />
+          </div>
         </div>
 
         <div className="glass-strong mx-auto w-full max-w-md rounded-[var(--radius-hero)] p-7 sm:p-9">

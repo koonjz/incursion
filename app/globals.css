@@ -19,28 +19,28 @@
   --color-navy-900: #11224a;
   --color-navy-950: #0a1530;
 
-  --color-ink: #f2f6ff;
-  --color-body: #b9c5de;
-  --color-muted: #8f9bb8;
-  --color-copper-300: #f7be8a;
-  --color-copper-400: #f5a15c;
-  --color-copper-500: #e9833a;
+  --color-ink: #f8fafc;
+  --color-body: #cbd5e1;
+  --color-muted: #94a3b8;
+  --color-copper-300: #fde68a;
+  --color-copper-400: #fbbf24;
+  --color-copper-500: #f59e0b;
 
   --radius-control: 0.75rem;
   --radius-panel: 1.25rem;
   --radius-hero: 1.75rem;
 
-  --shadow-glass: 0 1px 0 rgba(255, 255, 255, 0.14) inset, 0 24px 56px -24px rgba(0, 0, 0, 0.75),
-    0 2px 8px -2px rgba(0, 0, 0, 0.4);
-  --shadow-lift: 0 1px 0 rgba(255, 255, 255, 0.18) inset, 0 32px 70px -22px rgba(0, 0, 0, 0.85),
-    0 6px 18px -6px rgba(0, 0, 0, 0.5);
+  --shadow-glass: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 16px 36px -12px rgba(0, 0, 0, 0.75),
+    0 2px 6px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lift: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 24px 48px -16px rgba(0, 0, 0, 0.9),
+    0 4px 12px -2px rgba(0, 0, 0, 0.6);
 }
 
 /* ------------------------------------------------------------------ */
 /*  Base                                                                */
 /* ------------------------------------------------------------------ */
 html {
-  background: #02040a;
+  background: #07090e;
   color-scheme: dark;
   -webkit-text-size-adjust: 100%;
   scroll-padding-top: 6rem;
@@ -55,7 +55,7 @@ html {
 body {
   min-height: 100dvh;
   color: var(--color-body);
-  background: transparent;
+  background: #07090e;
   font-family: var(--font-sans);
   font-size: 0.9375rem;
   line-height: 1.6;
@@ -64,19 +64,14 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* The glossy backdrop lives in <Backdrop /> (see components/shared). This
-   layer is only the deep base colour + vignette. */
+/* Crisp dark canvas base */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -2;
   pointer-events: none;
-  background:
-    radial-gradient(70rem 46rem at 12% -10%, rgba(12, 28, 78, 0.55), transparent 62%),
-    radial-gradient(60rem 44rem at 100% 8%, rgba(10, 22, 62, 0.45), transparent 60%),
-    radial-gradient(60rem 50rem at 55% 115%, rgba(8, 18, 54, 0.6), transparent 62%),
-    linear-gradient(180deg, #030818 0%, #01030a 100%);
+  background: #07090e;
 }
 
 h1,
@@ -129,33 +124,33 @@ p {
 /*  Glass surfaces                                                      */
 /* ------------------------------------------------------------------ */
 @utility glass {
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015));
-  -webkit-backdrop-filter: blur(22px) saturate(120%);
-  backdrop-filter: blur(22px) saturate(120%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: var(--shadow-glass);
+  background: linear-gradient(165deg, rgba(17, 22, 35, 0.82) 0%, rgba(10, 14, 24, 0.92) 100%);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
 }
 
 @utility glass-strong {
-  background: linear-gradient(150deg, rgba(11, 20, 46, 0.95), rgba(4, 8, 22, 0.96));
-  -webkit-backdrop-filter: blur(28px) saturate(120%);
-  backdrop-filter: blur(28px) saturate(120%);
+  background: linear-gradient(165deg, rgba(20, 27, 43, 0.94) 0%, rgba(11, 15, 25, 0.98) 100%);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: var(--shadow-lift);
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.85), 0 1px 0 rgba(255, 255, 255, 0.07) inset;
 }
 
 /* Flat tint for items nested inside a glass panel (no stacked blur). */
 @utility glass-inset {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass {
-    background: rgba(18, 28, 60, 0.92);
+    background: #0d1220;
   }
   .glass-strong {
-    background: rgba(12, 20, 46, 0.97);
+    background: #111728;
   }
 }
 
@@ -519,4 +514,36 @@ p {
 .hero-rise {
   animation: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: var(--delay, 0ms);
+}
+
+
+/* Fix native dropdown visibility in dark mode */
+select {
+  color-scheme: dark !important;
+  background-color: #191e29 !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #343b4a;
+}
+
+/* Dropdown options */
+select option {
+  background-color: #191e29 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Selected option */
+select option:checked {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+/* Hovered options where supported */
+select option:hover {
+  background-color: #263449 !important;
+  color: #ffffff !important;
+}
+
+/* Disabled options */
+select option:disabled {
+  color: #94a3b8 !important;
 }
